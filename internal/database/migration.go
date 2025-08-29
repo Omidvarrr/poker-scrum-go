@@ -2,24 +2,13 @@ package database
 
 import (
 	"database/sql"
-	"os"
-
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/pressly/goose/v3"
 )
 
 // RunMigrations runs all pending migrations on the database file
 func RunMigrations(dbPath string) error {
-	// Create database file if it doesn't exist
-	if _, err := os.Stat(dbPath); os.IsNotExist(err) {
-		file, err := os.Create(dbPath)
-		if err != nil {
-			return err
-		}
-		file.Close()
-	}
-
-	// Open database
+	// Open database with foreign keys enabled
 	db, err := sql.Open("sqlite3", dbPath+"?_foreign_keys=on")
 	if err != nil {
 		return err

@@ -2,21 +2,16 @@ package main
 
 import (
 	"log"
-	"os"
 
+	"awesomeProject1/internal/config"
 	"awesomeProject1/internal/database"
 )
 
 func main() {
-	// Get database path from command line argument or use default
-	dbPath := "./app.db"
-	if len(os.Args) > 1 {
-		dbPath = os.Args[1]
-	}
+	cfg := config.LoadConfig()
+	log.Printf("Running migrations on database: %s\n", cfg.DatabasePath)
 
-	log.Printf("Running migrations on database: %s\n", dbPath)
-
-	if err := database.RunMigrations(dbPath); err != nil {
+	if err := database.RunMigrations(cfg.DatabasePath); err != nil {
 		log.Fatalf("Failed to run migrations: %v", err)
 	}
 
