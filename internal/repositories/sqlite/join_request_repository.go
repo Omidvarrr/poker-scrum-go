@@ -3,8 +3,9 @@ package sqlite
 import (
 	"awesomeProject1/internal/models"
 	repositories "awesomeProject1/internal/repositories"
-	"gorm.io/gorm"
 	"time"
+
+	"gorm.io/gorm"
 )
 
 type joinRequestRepository struct {
@@ -27,6 +28,14 @@ func (r *joinRequestRepository) GetJoinRequestsByRoom(roomID string) ([]models.J
 	var requests []models.JoinRequest
 	result := r.db.Preload("User").Find(
 		&requests, "room_id = ? AND status = ?", roomID, models.JoinRequestStatusPending,
+	)
+	return requests, result.Error
+}
+
+func (r *joinRequestRepository) GetJoinRequestsByRooms(roomIDs []string) ([]models.JoinRequest, error) {
+	var requests []models.JoinRequest
+	result := r.db.Preload("User").Preload("Room").Find(
+		&requests, "room_id IN (?) AND status = ?", roomIDs, models.JoinRequestStatusPending,
 	)
 	return requests, result.Error
 }

@@ -27,7 +27,19 @@ func (h *RoomHandler) CreateRoom(c *fiber.Ctx) error {
 
 	var request dto.CreateRoomRequest
 	request.Name = c.FormValue("name")
-	request.Avatar = c.FormValue("avatar")
+
+	// Handle optional file upload
+	file, err := c.FormFile("room_image")
+	if err == nil && file != nil {
+		// Save the uploaded file
+		savedPath, saveErr := utils.SaveUploadedFile(file, "rooms")
+		if saveErr != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error": "Failed to save image",
+			})
+		}
+		request.Avatar = savedPath
+	}
 
 	if request.Name == "" {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
@@ -42,7 +54,8 @@ func (h *RoomHandler) CreateRoom(c *fiber.Ctx) error {
 		})
 	}
 
-	return c.JSON(room)
+	// Redirect immediately to the created room
+	return c.Redirect("/rooms/"+room.ID, fiber.StatusFound)
 }
 
 func (h *RoomHandler) GetRoomsList(c *fiber.Ctx) error {
@@ -177,7 +190,19 @@ func (h *RoomHandler) UpdateRoom(c *fiber.Ctx) error {
 
 	var request dto.UpdateRoomRequest
 	request.Name = c.FormValue("name")
-	request.Avatar = c.FormValue("avatar")
+
+	// Handle optional file upload
+	file, err := c.FormFile("room_image")
+	if err == nil && file != nil {
+		// Save the uploaded file
+		savedPath, saveErr := utils.SaveUploadedFile(file, "rooms")
+		if saveErr != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error": "Failed to save image",
+			})
+		}
+		request.Avatar = savedPath
+	}
 
 	if request.Name == "" {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
@@ -273,7 +298,8 @@ func (h *RoomHandler) GetRoomMembers(c *fiber.Ctx) error {
 		})
 	}
 
-	members, err := h.roomService.GetRoomMembers(userID, roomID)
+	baseURL := c.Protocol() + "://" + c.Get("Host")
+	members, err := h.roomService.GetRoomMembers(userID, roomID, baseURL)
 	if err != nil {
 		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
 			"error": err.Error(),

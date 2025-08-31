@@ -5,13 +5,14 @@ import "time"
 type User struct {
 	ID               int       `json:"id" db:"id"`
 	Email            string    `json:"email" db:"email"`
-	Name             string    `json:"name" db:"name"`
+	FirstName        string    `json:"first_name" db:"first_name"`
+	LastName         string    `json:"last_name" db:"last_name"`
 	Avatar           string    `json:"avatar" db:"avatar"`
 	PasswordHash     string    `json:"-" db:"password_hash"`
 	CreatedAt        time.Time `json:"created_at" db:"created_at"`
 	ProfileCompleted bool      `json:"profile_completed" db:"profile_completed"`
 }
 
-func NewUser(email string, name string, passwordHash string) *User {
-	return &User{Email: email, Name: name, PasswordHash: passwordHash}
+func NewUser(email string, firstName string, lastName string, passwordHash string) *User {
+	return &User{Email: email, FirstName: firstName, LastName: lastName, PasswordHash: passwordHash}
 }

@@ -9,15 +9,21 @@ import (
 	"awesomeProject1/internal/utils"
 	"log"
 	"os"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/logger"
+	"github.com/gofiber/fiber/v2/middleware/session"
 	"github.com/gofiber/websocket/v2"
 )
 
 func main() {
 	cfg := config.LoadConfig()
+
+	// inject secrets from config
+	utils.SetJWTSecret(cfg.JWTSecret)
+	utils.SetOAuthStateSecret([]byte(cfg.OAuthStateSecret))
 
 	db, err := database.Connect(cfg.DatabasePath)
 	if err != nil {
@@ -35,7 +41,7 @@ func main() {
 	voteRepo := sqlite.NewVoteRepository(db)
 
 	authService := services.NewAuthService(userRepo)
-	greetingService := services.NewGreetingService()
+	greetingService := services.NewGreetingService(userRepo)
 	profileService := services.NewProfileService(userRepo)
 	roomService := services.NewRoomService(roomRepo, joinRequestRepo, userRepo)
 	voteService := services.NewVoteService(voteRepo, roomRepo)
@@ -43,20 +49,36 @@ func main() {
 	authHandler := handlers.NewAuthHandler(authService, greetingService)
 	profileHandler := handlers.NewProfileHandler(profileService)
 	roomHandler := handlers.NewRoomHandler(roomService)
-	voteHandler := handlers.NewVoteHandler(voteService)
-	wsHandler := handlers.NewWebSocketHandler(roomRepo)
+	wsHandler := handlers.NewWebSocketHandler(roomRepo).WithVoteService(voteService)
 
-	app := fiber.New(fiber.Config{
-		ErrorHandler: func(c *fiber.Ctx, err error) error {
-			code := fiber.StatusInternalServerError
-			if e, ok := err.(*fiber.Error); ok {
-				code = e.Code
-			}
-			return c.Status(code).JSON(fiber.Map{
-				"error": err.Error(),
-			})
+	// page handler for templ rendering
+	pageHandler := handlers.NewPageHandler(roomService, greetingService, voteService, profileService)
+	// oauth handler with tuned session store
+	sessionStore := session.New(
+		session.Config{
+			CookieName:     "sid",
+			CookieHTTPOnly: true,
+			CookieSecure:   false,
+			Expiration:     15 * time.Minute,
 		},
-	})
+	)
+	oauthHandler := handlers.NewOAuthHandler(cfg, userRepo).WithSessionStore(sessionStore)
+
+	app := fiber.New(
+		fiber.Config{
+			ErrorHandler: func(c *fiber.Ctx, err error) error {
+				code := fiber.StatusInternalServerError
+				if e, ok := err.(*fiber.Error); ok {
+					code = e.Code
+				}
+				return c.Status(code).JSON(
+					fiber.Map{
+						"error": err.Error(),
+					},
+				)
+			},
+		},
+	)
 
 	app.Use(logger.New())
 	app.Use(cors.New())
@@ -66,10 +88,13 @@ func main() {
 		log.Fatal("Failed to create upload directory:", err)
 	}
 	app.Static("/uploads", "./data/uploads")
+	app.Static("/static", "./web/static")
 
 	api := app.Group("/api")
 
-	api.Post("/auth/login", authHandler.Login)
+	api.Get("/auth/google/login", oauthHandler.GoogleLogin)
+	api.Get("/auth/google/callback", oauthHandler.GoogleCallback)
+	api.Post("/auth/logout", oauthHandler.Logout)
 
 	protected := api.Group("", utils.JWTMiddleware())
 
@@ -83,28 +108,29 @@ func main() {
 	protected.Get("/rooms/joined", roomHandler.GetJoinedRooms)
 	protected.Get("/rooms/all", roomHandler.GetAllRoomsWithStatus)
 	protected.Post("/rooms", roomHandler.CreateRoom)
-	protected.Post("/rooms/join", roomHandler.RequestJoinRoom)
-	protected.Get("/rooms/requests", roomHandler.GetUserJoinRequests)
-
-	protected.Get("/rooms/:roomId/requests", roomHandler.GetJoinRequests)
-	protected.Post("/rooms/requests/handle", roomHandler.HandleJoinRequest)
 	protected.Put("/rooms/:roomId", roomHandler.UpdateRoom)
 	protected.Delete("/rooms/:roomId", roomHandler.DeleteRoom)
 	protected.Get("/rooms/:roomId/members", roomHandler.GetRoomMembers)
 	protected.Post("/rooms/:roomId/members/manage", roomHandler.ManageRoomMember)
 
-	protected.Post("/rooms/:roomId/vote", voteHandler.CastVote)
-	protected.Get("/rooms/:roomId/votes", voteHandler.GetVotes)
-	protected.Post("/rooms/:roomId/votes/reveal", voteHandler.RevealVotes)
-	protected.Post("/rooms/:roomId/votes/reset", voteHandler.ResetVotes)
+	// Pages (templ)
+	app.Get("/", pageHandler.Home)
+	app.Get("/home", pageHandler.Home)
+	app.Get("/login", pageHandler.Login)
+	app.Get("/rooms", pageHandler.Rooms)
+	app.Get("/create", pageHandler.Create)
+	app.Get("/profile", pageHandler.Profile)
+	app.Get("/rooms/:roomId", pageHandler.RoomVote)
 
-	app.Use("/ws", func(c *fiber.Ctx) error {
-		if websocket.IsWebSocketUpgrade(c) {
-			c.Locals("allowed", true)
-			return c.Next()
-		}
-		return fiber.ErrUpgradeRequired
-	})
+	app.Use(
+		"/ws", func(c *fiber.Ctx) error {
+			if websocket.IsWebSocketUpgrade(c) {
+				c.Locals("allowed", true)
+				return c.Next()
+			}
+			return fiber.ErrUpgradeRequired
+		},
+	)
 
 	app.Get("/ws", websocket.New(wsHandler.HandleWebSocket))
 

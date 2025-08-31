@@ -6,8 +6,9 @@ import (
 	"awesomeProject1/internal/repositories"
 	"awesomeProject1/internal/utils"
 	"errors"
-	"github.com/google/uuid"
 	"strconv"
+
+	"github.com/google/uuid"
 )
 
 type RoomService struct {
@@ -179,6 +180,24 @@ func (rs *RoomService) GetUserJoinRequests(userID int) ([]models.JoinRequest, er
 	return rs.joinRequestRepo.GetJoinRequestsByUser(userID)
 }
 
+func (rs *RoomService) GetIncomingJoinRequests(userID int) ([]models.JoinRequest, error) {
+	rooms, err := rs.roomRepo.GetRoomsByOwner(userID)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(rooms) == 0 {
+		return []models.JoinRequest{}, nil
+	}
+
+	var roomIDs []string
+	for _, room := range rooms {
+		roomIDs = append(roomIDs, room.ID)
+	}
+
+	return rs.joinRequestRepo.GetJoinRequestsByRooms(roomIDs)
+}
+
 func (rs *RoomService) UpdateRoom(userID int, roomID string, request dto.UpdateRoomRequest) error {
 	isOwner, err := rs.roomRepo.IsUserOwner(roomID, userID)
 	if err != nil {
@@ -224,15 +243,7 @@ func (rs *RoomService) DeleteRoom(userID int, roomID string) error {
 	return rs.roomRepo.DeleteRoom(roomID)
 }
 
-func (rs *RoomService) GetRoomMembers(userID int, roomID string) (dto.RoomMembersResponse, error) {
-	isMember, err := rs.roomRepo.IsUserInRoom(roomID, userID)
-	if err != nil {
-		return dto.RoomMembersResponse{}, err
-	}
-	if !isMember {
-		return dto.RoomMembersResponse{}, errors.New("user is not a member of this room")
-	}
-
+func (rs *RoomService) GetRoomMembers(userID int, roomID string, baseURL string) (dto.RoomMembersResponse, error) {
 	members, err := rs.roomRepo.GetRoomMembers(roomID)
 	if err != nil {
 		return dto.RoomMembersResponse{}, err
@@ -246,11 +257,12 @@ func (rs *RoomService) GetRoomMembers(userID int, roomID string) (dto.RoomMember
 		}
 
 		memberInfos = append(memberInfos, dto.RoomMemberInfo{
-			UserID:   user.ID,
-			Name:     user.Name,
-			Avatar:   user.Avatar,
-			Role:     string(member.Role),
-			IsOnline: false,
+			UserID:    user.ID,
+			FirstName: user.FirstName,
+			LastName:  user.LastName,
+			Avatar:    utils.ConvertToURL(user.Avatar, baseURL),
+			Role:      string(member.Role),
+			IsOnline:  false,
 		})
 	}
 
@@ -277,22 +289,29 @@ func (rs *RoomService) GetJoinedRooms(userID int, baseURL string) ([]dto.RoomRes
 	if err != nil {
 		return nil, err
 	}
-	
+
 	var roomResponses []dto.RoomResponse
+	userIDStr := strconv.Itoa(userID)
+
 	for _, room := range rooms {
-		userIDStr := strconv.Itoa(userID)
 		isOwner := room.OwnerId == userIDStr
-		
-		roomResponses = append(roomResponses, dto.RoomResponse{
-			ID:       room.ID,
-			Name:     room.Name,
-			Avatar:   utils.ConvertToURL(room.Avatar, baseURL),
-			OwnerID:  room.OwnerId,
-			IsOwner:  isOwner,
-			IsMember: true,
-		})
+
+		// Check if user is admin in this room
+		isAdmin, _ := rs.roomRepo.IsUserAdmin(room.ID, userID)
+
+		// Only include rooms where user is owner or admin
+		if isOwner || isAdmin {
+			roomResponses = append(roomResponses, dto.RoomResponse{
+				ID:       room.ID,
+				Name:     room.Name,
+				Avatar:   utils.ConvertToURL(room.Avatar, baseURL),
+				OwnerID:  room.OwnerId,
+				IsOwner:  isOwner,
+				IsMember: true,
+			})
+		}
 	}
-	
+
 	return roomResponses, nil
 }
 
@@ -301,23 +320,22 @@ func (rs *RoomService) GetAllRoomsWithStatus(userID int, baseURL string) ([]dto.
 	if err != nil {
 		return nil, err
 	}
-	
+
 	var roomResponses []dto.RoomResponse
 	userIDStr := strconv.Itoa(userID)
-	
+
 	for _, room := range allRooms {
 		isOwner := room.OwnerId == userIDStr
-		isMember, _ := rs.roomRepo.IsUserInRoom(room.ID, userID)
-		
+
 		roomResponses = append(roomResponses, dto.RoomResponse{
 			ID:       room.ID,
 			Name:     room.Name,
 			Avatar:   utils.ConvertToURL(room.Avatar, baseURL),
 			OwnerID:  room.OwnerId,
 			IsOwner:  isOwner,
-			IsMember: isMember,
+			IsMember: true, // Everyone can access any room
 		})
 	}
-	
+
 	return roomResponses, nil
 }

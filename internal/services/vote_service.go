@@ -21,14 +21,6 @@ func NewVoteService(voteRepo repositories.VoteRepository, roomRepo repositories.
 }
 
 func (vs *VoteService) CastVote(userID int, roomID string, request dto.VoteRequest) error {
-	isMember, err := vs.roomRepo.IsUserInRoom(roomID, userID)
-	if err != nil {
-		return err
-	}
-	if !isMember {
-		return errors.New("user is not a member of this room")
-	}
-
 	session, err := vs.voteRepo.GetActiveVoteSession(roomID)
 	if err != nil {
 		if err == repositories.ErrNotFound {
@@ -47,6 +39,11 @@ func (vs *VoteService) CastVote(userID int, roomID string, request dto.VoteReque
 		}
 	}
 
+	// If vote value is empty, remove the user's vote
+	if request.VoteValue == "" {
+		return vs.voteRepo.RemoveVote(userID, roomID, session.ID)
+	}
+
 	vote := models.Vote{
 		RoomID:    roomID,
 		UserID:    userID,
@@ -58,14 +55,6 @@ func (vs *VoteService) CastVote(userID int, roomID string, request dto.VoteReque
 }
 
 func (vs *VoteService) GetVotes(userID int, roomID string) (dto.VoteResponse, error) {
-	isMember, err := vs.roomRepo.IsUserInRoom(roomID, userID)
-	if err != nil {
-		return dto.VoteResponse{}, err
-	}
-	if !isMember {
-		return dto.VoteResponse{}, errors.New("user is not a member of this room")
-	}
-
 	session, err := vs.voteRepo.GetActiveVoteSession(roomID)
 	if err != nil {
 		if err == repositories.ErrNotFound {
@@ -81,10 +70,7 @@ func (vs *VoteService) GetVotes(userID int, roomID string) (dto.VoteResponse, er
 	response := dto.VoteResponse{
 		SessionID:  session.ID,
 		IsRevealed: session.IsRevealed,
-	}
-
-	if session.IsRevealed {
-		response.Votes = session.Votes
+		Votes:      session.Votes,
 	}
 
 	return response, nil

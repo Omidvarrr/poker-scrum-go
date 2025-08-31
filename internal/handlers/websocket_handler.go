@@ -1,7 +1,9 @@
 package handlers
 
 import (
+	"awesomeProject1/internal/dto"
 	"awesomeProject1/internal/repositories"
+	"awesomeProject1/internal/services"
 	"log"
 	"sync"
 
@@ -9,9 +11,11 @@ import (
 )
 
 type WebSocketHandler struct {
-	roomRepo repositories.RoomRepository
-	clients  map[string]map[*websocket.Conn]int // roomID -> conn -> userID
-	mutex    sync.RWMutex
+	roomRepo      repositories.RoomRepository
+	voteService   *services.VoteService
+	clients       map[string]map[*websocket.Conn]int // roomID -> conn -> userID
+	globalClients map[*websocket.Conn]bool           // connections listening to global updates
+	mutex         sync.RWMutex
 }
 
 type WebSocketMessage struct {
@@ -27,9 +31,15 @@ type OnlineUsersMessage struct {
 
 func NewWebSocketHandler(roomRepo repositories.RoomRepository) *WebSocketHandler {
 	return &WebSocketHandler{
-		roomRepo: roomRepo,
-		clients:  make(map[string]map[*websocket.Conn]int),
+		roomRepo:      roomRepo,
+		clients:       make(map[string]map[*websocket.Conn]int),
+		globalClients: make(map[*websocket.Conn]bool),
 	}
+}
+
+func (h *WebSocketHandler) WithVoteService(voteService *services.VoteService) *WebSocketHandler {
+	h.voteService = voteService
+	return h
 }
 
 func (h *WebSocketHandler) HandleWebSocket(c *websocket.Conn) {
@@ -49,12 +59,14 @@ func (h *WebSocketHandler) HandleWebSocket(c *websocket.Conn) {
 		switch msg.Type {
 		case "join_room":
 			h.handleJoinRoom(c, msg)
-		case "vote_cast":
-			h.broadcastToRoom(msg.RoomID, msg)
-		case "votes_revealed":
-			h.broadcastToRoom(msg.RoomID, msg)
-		case "votes_reset":
-			h.broadcastToRoom(msg.RoomID, msg)
+		case "join_global_updates":
+			h.handleJoinGlobalUpdates(c, msg)
+		case "cast_vote":
+			h.handleCastVote(c, msg)
+		case "reveal_votes":
+			h.handleRevealVotes(c, msg)
+		case "reset_votes":
+			h.handleResetVotes(c, msg)
 		}
 	}
 }
@@ -76,17 +88,27 @@ func (h *WebSocketHandler) handleJoinRoom(conn *websocket.Conn, msg WebSocketMes
 	}
 	userID := int(userIDFloat)
 
-	isMember, err := h.roomRepo.IsUserInRoom(roomID, userID)
-	if err != nil || !isMember {
-		conn.WriteJSON(map[string]string{
-			"error": "User is not a member of this room",
-		})
+	if userID == 0 {
+		conn.WriteJSON(
+			map[string]string{
+				"error": "Invalid user ID",
+			},
+		)
 		return
 	}
 
 	h.addClient(roomID, conn, userID)
 
 	h.broadcastOnlineUsers(roomID)
+
+	// Notify global clients that someone joined a room
+	h.broadcastToGlobalClients(WebSocketMessage{
+		Type:   "user_joined_room",
+		RoomID: roomID,
+		Data: map[string]interface{}{
+			"user_id": userID,
+		},
+	})
 }
 
 func (h *WebSocketHandler) addClient(roomID string, conn *websocket.Conn, userID int) {
@@ -99,10 +121,23 @@ func (h *WebSocketHandler) addClient(roomID string, conn *websocket.Conn, userID
 	h.clients[roomID][conn] = userID
 }
 
+func (h *WebSocketHandler) handleJoinGlobalUpdates(conn *websocket.Conn, msg WebSocketMessage) {
+	h.mutex.Lock()
+	defer h.mutex.Unlock()
+
+	h.globalClients[conn] = true
+
+	conn.WriteJSON(map[string]string{
+		"type":    "global_updates_joined",
+		"message": "Connected to global updates",
+	})
+}
+
 func (h *WebSocketHandler) removeClient(conn *websocket.Conn) {
 	h.mutex.Lock()
 	defer h.mutex.Unlock()
 
+	// Remove from room clients
 	for roomID, roomClients := range h.clients {
 		if _, exists := roomClients[conn]; exists {
 			delete(roomClients, conn)
@@ -111,11 +146,18 @@ func (h *WebSocketHandler) removeClient(conn *websocket.Conn) {
 			} else {
 				h.mutex.Unlock()
 				h.broadcastOnlineUsers(roomID)
+				h.broadcastToGlobalClients(WebSocketMessage{
+					Type:   "user_left_room",
+					RoomID: roomID,
+				})
 				h.mutex.Lock()
 			}
 			break
 		}
 	}
+
+	// Remove from global clients
+	delete(h.globalClients, conn)
 }
 
 func (h *WebSocketHandler) broadcastToRoom(roomID string, message WebSocketMessage) {
@@ -130,6 +172,25 @@ func (h *WebSocketHandler) broadcastToRoom(roomID string, message WebSocketMessa
 	for conn := range roomClients {
 		if err := conn.WriteJSON(message); err != nil {
 			log.Println("WebSocket write error:", err)
+		}
+	}
+}
+
+func (h *WebSocketHandler) broadcastToGlobalClients(message WebSocketMessage) {
+	h.mutex.RLock()
+	globalClients := make(map[*websocket.Conn]bool)
+	for conn, active := range h.globalClients {
+		globalClients[conn] = active
+	}
+	h.mutex.RUnlock()
+
+	for conn := range globalClients {
+		if err := conn.WriteJSON(message); err != nil {
+			log.Println("WebSocket global write error:", err)
+			// Remove dead connection
+			h.mutex.Lock()
+			delete(h.globalClients, conn)
+			h.mutex.Unlock()
 		}
 	}
 }
@@ -186,4 +247,101 @@ func (h *WebSocketHandler) BroadcastVotesReset(roomID string) {
 		RoomID: roomID,
 	}
 	h.broadcastToRoom(roomID, message)
+}
+
+func (h *WebSocketHandler) handleCastVote(conn *websocket.Conn, msg WebSocketMessage) {
+	if h.voteService == nil {
+		conn.WriteJSON(map[string]string{"error": "Vote service not available"})
+		return
+	}
+
+	data, ok := msg.Data.(map[string]interface{})
+	if !ok {
+		conn.WriteJSON(map[string]string{"error": "Invalid vote data"})
+		return
+	}
+
+	userID := h.getUserIDFromConnection(conn)
+	if userID == 0 {
+		conn.WriteJSON(map[string]string{"error": "User not authenticated"})
+		return
+	}
+
+	voteValue, ok := data["vote_value"].(string)
+	if !ok {
+		conn.WriteJSON(map[string]string{"error": "Vote value required"})
+		return
+	}
+
+	request := dto.VoteRequest{VoteValue: voteValue}
+	err := h.voteService.CastVote(userID, msg.RoomID, request)
+	if err != nil {
+		conn.WriteJSON(map[string]string{"error": err.Error()})
+		return
+	}
+
+	// Broadcast to all clients in the room
+	h.BroadcastVoteCast(msg.RoomID, userID, voteValue)
+
+	// Send success response to the voting user
+	conn.WriteJSON(
+		map[string]interface{}{
+			"type":    "vote_success",
+			"message": "Vote cast successfully",
+		},
+	)
+}
+
+func (h *WebSocketHandler) handleRevealVotes(conn *websocket.Conn, msg WebSocketMessage) {
+	if h.voteService == nil {
+		conn.WriteJSON(map[string]string{"error": "Vote service not available"})
+		return
+	}
+
+	userID := h.getUserIDFromConnection(conn)
+	if userID == 0 {
+		conn.WriteJSON(map[string]string{"error": "User not authenticated"})
+		return
+	}
+
+	err := h.voteService.RevealVotes(userID, msg.RoomID)
+	if err != nil {
+		conn.WriteJSON(map[string]string{"error": err.Error()})
+		return
+	}
+
+	h.BroadcastVotesRevealed(msg.RoomID)
+}
+
+func (h *WebSocketHandler) handleResetVotes(conn *websocket.Conn, msg WebSocketMessage) {
+	if h.voteService == nil {
+		conn.WriteJSON(map[string]string{"error": "Vote service not available"})
+		return
+	}
+
+	userID := h.getUserIDFromConnection(conn)
+	if userID == 0 {
+		conn.WriteJSON(map[string]string{"error": "User not authenticated"})
+		return
+	}
+
+	err := h.voteService.ResetVotes(userID, msg.RoomID)
+	if err != nil {
+		conn.WriteJSON(map[string]string{"error": err.Error()})
+		return
+	}
+
+	h.BroadcastVotesReset(msg.RoomID)
+}
+
+func (h *WebSocketHandler) getUserIDFromConnection(conn *websocket.Conn) int {
+	h.mutex.RLock()
+	defer h.mutex.RUnlock()
+
+	for _, roomClients := range h.clients {
+		if userID, exists := roomClients[conn]; exists {
+			return userID
+		}
+	}
+	return 0
 }

@@ -13,8 +13,8 @@ type UserRepository interface {
 	GetUserById(id int) (models.User, error)
 	GetUserByEmail(email string) (models.User, error)
 	CreateUser(user models.User) (models.User, error)
-	UpdateUserProfile(id int, name string, avatar string) error
-	CompleteUserProfile(id int, name string, avatar string) error
+	UpdateUserProfile(id int, firstName string, lastName string, avatar string) error
+	CompleteUserProfile(id int, firstName string, lastName string, avatar string) error
 }
 
 type RoomRepository interface {
@@ -37,6 +37,7 @@ type RoomRepository interface {
 type JoinRequestRepository interface {
 	CreateJoinRequest(request models.JoinRequest) (models.JoinRequest, error)
 	GetJoinRequestsByRoom(roomID string) ([]models.JoinRequest, error)
+	GetJoinRequestsByRooms(roomIDs []string) ([]models.JoinRequest, error)
 	GetJoinRequestsByUser(userID int) ([]models.JoinRequest, error)
 	GetJoinRequestById(id int) (models.JoinRequest, error)
 	UpdateJoinRequestStatus(id int, status models.JoinRequestStatus, handledBy int) error
@@ -49,6 +50,7 @@ type VoteRepository interface {
 	GetActiveVoteSession(roomID string) (models.VoteSession, error)
 	RevealVoteSession(sessionID string) error
 	CastVote(vote models.Vote) error
+	RemoveVote(userID int, roomID string, sessionID string) error
 	GetVotesBySession(sessionID string) ([]models.Vote, error)
 	DeleteVotesBySession(sessionID string) error
 }

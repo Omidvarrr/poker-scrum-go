@@ -56,7 +56,27 @@ func (r *voteRepository) RevealVoteSession(sessionID string) error {
 }
 
 func (r *voteRepository) CastVote(vote models.Vote) error {
-	result := r.db.Save(&vote)
+	// Use UPSERT to handle vote updates
+	var existingVote models.Vote
+	result := r.db.Where("room_id = ? AND user_id = ? AND session_id = ?",
+		vote.RoomID, vote.UserID, vote.SessionID).First(&existingVote)
+
+	if result.Error == gorm.ErrRecordNotFound {
+		// No existing vote, create new one
+		return r.db.Create(&vote).Error
+	} else if result.Error != nil {
+		return result.Error
+	} else {
+		// Update existing vote
+		existingVote.VoteValue = vote.VoteValue
+		existingVote.VotedAt = vote.VotedAt
+		return r.db.Save(&existingVote).Error
+	}
+}
+
+func (r *voteRepository) RemoveVote(userID int, roomID string, sessionID string) error {
+	result := r.db.Delete(&models.Vote{}, "room_id = ? AND user_id = ? AND session_id = ?",
+		roomID, userID, sessionID)
 	return result.Error
 }
 

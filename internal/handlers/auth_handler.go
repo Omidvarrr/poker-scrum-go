@@ -1,9 +1,9 @@
 package handlers
 
 import (
-	"awesomeProject1/internal/dto"
 	"awesomeProject1/internal/services"
 	"awesomeProject1/internal/utils"
+
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -19,36 +19,6 @@ func NewAuthHandler(authService *services.AuthService, greetingService *services
 	}
 }
 
-func (h *AuthHandler) Login(c *fiber.Ctx) error {
-	var request dto.LoginRequest
-	if err := c.BodyParser(&request); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(
-			fiber.Map{
-				"error": "Invalid request body",
-			},
-		)
-	}
-
-	if request.Email == "" || request.Password == "" {
-		return c.Status(fiber.StatusBadRequest).JSON(
-			fiber.Map{
-				"error": "Email and password are required",
-			},
-		)
-	}
-
-	response, err := h.authService.Login(request)
-	if err != nil {
-		return c.Status(fiber.StatusUnauthorized).JSON(
-			fiber.Map{
-				"error": err.Error(),
-			},
-		)
-	}
-
-	return c.JSON(response)
-}
-
 func (h *AuthHandler) GetGreeting(c *fiber.Ctx) error {
 	userID, err := utils.GetUserIDFromToken(c)
 	if err != nil {
@@ -59,8 +29,13 @@ func (h *AuthHandler) GetGreeting(c *fiber.Ctx) error {
 		)
 	}
 
-	userName := c.Query("name", "Developer")
-
-	greeting := h.greetingService.GetGreeting(userID, userName)
+	greeting, err := h.greetingService.GetGreeting(userID)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(
+			fiber.Map{
+				"error": "Problem in generate greeting message",
+			},
+		)
+	}
 	return c.JSON(greeting)
 }

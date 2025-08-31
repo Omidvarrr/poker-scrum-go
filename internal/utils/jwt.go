@@ -14,7 +14,11 @@ type JWTClaims struct {
 	jwt.RegisteredClaims
 }
 
-var jwtSecret = []byte("your-secret-key") // TODO: Move to environment variables
+var jwtSecret []byte
+
+func SetJWTSecret(secret string) {
+	jwtSecret = []byte(secret)
+}
 
 func GenerateToken(userID int) (string, error) {
 	claims := JWTClaims{
@@ -60,12 +64,20 @@ func ValidateToken(tokenString string) (*JWTClaims, error) {
 }
 
 func GetUserIDFromToken(c *fiber.Ctx) (int, error) {
+	var tokenString string
+
+	// Try to get token from Authorization header first
 	authHeader := c.Get("Authorization")
-	if authHeader == "" {
-		return 0, errors.New("authorization header missing")
+	if authHeader != "" {
+		tokenString = strings.Replace(authHeader, "Bearer ", "", 1)
+	} else {
+		// If no Authorization header, try to get token from cookie
+		tokenString = c.Cookies("token")
+		if tokenString == "" {
+			return 0, errors.New("token missing")
+		}
 	}
 
-	tokenString := strings.Replace(authHeader, "Bearer ", "", 1)
 	claims, err := ValidateToken(tokenString)
 	if err != nil {
 		return 0, err

@@ -3,6 +3,7 @@ package sqlite
 import (
 	"awesomeProject1/internal/models"
 	repositories "awesomeProject1/internal/repositories"
+
 	"gorm.io/gorm"
 )
 
@@ -47,18 +48,20 @@ func (r *userRepository) CreateUser(user models.User) (models.User, error) {
 	return user, nil
 }
 
-func (r *userRepository) UpdateUserProfile(id int, name string, avatar string) error {
+func (r *userRepository) UpdateUserProfile(id int, firstName string, lastName string, avatar string) error {
 	updates := map[string]interface{}{
-		"name":   name,
-		"avatar": avatar,
+		"first_name": firstName,
+		"last_name":  lastName,
+		"avatar":     avatar,
 	}
 	result := r.db.Model(&models.User{}).Where("id = ?", id).Updates(updates)
 	return result.Error
 }
 
-func (r *userRepository) CompleteUserProfile(id int, name string, avatar string) error {
+func (r *userRepository) CompleteUserProfile(id int, firstName string, lastName string, avatar string) error {
 	updates := map[string]interface{}{
-		"name":              name,
+		"first_name":        firstName,
+		"last_name":         lastName,
 		"avatar":            avatar,
 		"profile_completed": true,
 	}

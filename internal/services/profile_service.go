@@ -17,11 +17,11 @@ func NewProfileService(userRepo repositories.UserRepository) *ProfileService {
 }
 
 func (ps *ProfileService) CompleteProfile(userID int, request dto.CompleteProfileRequest) error {
-	return ps.userRepo.CompleteUserProfile(userID, request.Name, request.Avatar)
+	return ps.userRepo.CompleteUserProfile(userID, request.FirstName, request.LastName, request.Avatar)
 }
 
 func (ps *ProfileService) UpdateProfile(userID int, request dto.UpdateProfileRequest) error {
-	return ps.userRepo.UpdateUserProfile(userID, request.Name, request.Avatar)
+	return ps.userRepo.UpdateUserProfile(userID, request.FirstName, request.LastName, request.Avatar)
 }
 
 func (ps *ProfileService) GetProfile(userID int, baseURL string) (dto.ProfileResponse, error) {
@@ -33,7 +33,8 @@ func (ps *ProfileService) GetProfile(userID int, baseURL string) (dto.ProfileRes
 	return dto.ProfileResponse{
 		ID:               user.ID,
 		Email:            user.Email,
-		Name:             user.Name,
+		FirstName:        user.FirstName,
+		LastName:         user.LastName,
 		Avatar:           utils.ConvertToURL(user.Avatar, baseURL),
 		ProfileCompleted: user.ProfileCompleted,
 	}, nil

@@ -17,5 +17,5 @@ type VoteSession struct {
 	RoomID     string    `json:"room_id" db:"room_id"`
 	IsRevealed bool      `json:"is_revealed" db:"is_revealed"`
 	CreatedAt  time.Time `json:"created_at" db:"created_at"`
-	Votes      []Vote    `json:"votes,omitempty"`
+	Votes      []Vote    `json:"votes,omitempty" gorm:"foreignKey:SessionID;references:ID"`
 }

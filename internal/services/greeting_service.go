@@ -2,6 +2,7 @@ package services
 
 import (
 	"awesomeProject1/internal/dto"
+	"awesomeProject1/internal/repositories"
 	"bufio"
 	"fmt"
 	"math/rand"
@@ -13,6 +14,7 @@ import (
 type GreetingService struct {
 	quotes       []string
 	lastGreeting map[int]greetingCache
+	userRepo     repositories.UserRepository
 }
 
 type greetingCache struct {
@@ -21,23 +23,30 @@ type greetingCache struct {
 	timestamp time.Time
 }
 
-func NewGreetingService() *GreetingService {
+func NewGreetingService(userRepo repositories.UserRepository) *GreetingService {
 	service := &GreetingService{
+		userRepo:     userRepo,
 		lastGreeting: make(map[int]greetingCache),
 	}
 	service.loadQuotes()
 	return service
 }
 
-func (gs *GreetingService) GetGreeting(userID int, userName string) dto.GreetingResponse {
+func (gs *GreetingService) GetGreeting(userID int) (dto.GreetingResponse, error) {
 	now := time.Now()
+
+	user, err := gs.userRepo.GetUserById(userID)
+	if err != nil {
+		return dto.GreetingResponse{}, err
+	}
+	userName := user.FirstName
 
 	if cached, exists := gs.lastGreeting[userID]; exists {
 		if now.Sub(cached.timestamp) < 15*time.Minute {
 			return dto.GreetingResponse{
 				Message: cached.message,
 				Quote:   cached.quote,
-			}
+			}, nil
 		}
 	}
 
@@ -53,7 +62,7 @@ func (gs *GreetingService) GetGreeting(userID int, userName string) dto.Greeting
 	return dto.GreetingResponse{
 		Message: message,
 		Quote:   quote,
-	}
+	}, nil
 }
 
 func (gs *GreetingService) generateGreeting(userName string, now time.Time) string {

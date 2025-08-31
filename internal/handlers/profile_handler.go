@@ -4,12 +4,13 @@ import (
 	"awesomeProject1/internal/dto"
 	"awesomeProject1/internal/services"
 	"awesomeProject1/internal/utils"
-	"github.com/gofiber/fiber/v2"
 	"mime/multipart"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/gofiber/fiber/v2"
 )
 
 type ProfileHandler struct {
@@ -31,11 +32,12 @@ func (h *ProfileHandler) CompleteProfile(c *fiber.Ctx) error {
 	}
 
 	var request dto.CompleteProfileRequest
-	request.Name = c.FormValue("name")
+	request.FirstName = c.FormValue("first_name")
+	request.LastName = c.FormValue("last_name")
 
-	if request.Name == "" {
+	if request.FirstName == "" {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Name is required",
+			"error": "First name is required",
 		})
 	}
 
@@ -71,11 +73,12 @@ func (h *ProfileHandler) UpdateProfile(c *fiber.Ctx) error {
 	}
 
 	var request dto.UpdateProfileRequest
-	request.Name = c.FormValue("name")
+	request.FirstName = c.FormValue("first_name")
+	request.LastName = c.FormValue("last_name")
 
-	if request.Name == "" {
+	if request.FirstName == "" {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Name is required",
+			"error": "First name is required",
 		})
 	}
 

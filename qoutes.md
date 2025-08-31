@@ -124,7 +124,7 @@ The machine that never lies runs code written by humans who never stop lying to 
 Infinite loops are the programmer's memento mori
 Race conditions are proof that even computers believe in chaos
 The heap and the stack: one grows wild, the other in perfect order
-Undefined behavior is the universe's way of saying 'you're not supposed to be here'
+Undefined behavior is the universe's way of saying 'you're not supposed to be here
 Every switch statement is a crossroads where logic meets destiny
 The ternary operator: for when life gives you exactly two choices
 NaN is a number's way of having an existential crisis

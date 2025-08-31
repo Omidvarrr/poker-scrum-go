@@ -39,11 +39,12 @@ type RoomMembersResponse struct {
 }
 
 type RoomMemberInfo struct {
-	UserID   int    `json:"user_id"`
-	Name     string `json:"name"`
-	Avatar   string `json:"avatar"`
-	Role     string `json:"role"`
-	IsOnline bool   `json:"is_online"`
+	UserID    int    `json:"user_id"`
+	FirstName string `json:"first_name"`
+	LastName  string `json:"last_name"`
+	Avatar    string `json:"avatar"`
+	Role      string `json:"role"`
+	IsOnline  bool   `json:"is_online"`
 }
 
 type ManageRoomMemberRequest struct {
