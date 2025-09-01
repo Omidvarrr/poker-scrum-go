@@ -11,11 +11,3 @@ type VoteResponse struct {
 	IsRevealed bool          `json:"is_revealed"`
 	Votes      []models.Vote `json:"votes,omitempty"`
 }
-
-type RevealVotesRequest struct {
-	SessionID string `json:"session_id"`
-}
-
-type ResetVotesRequest struct {
-	SessionID string `json:"session_id"`
-}

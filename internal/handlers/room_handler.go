@@ -4,6 +4,10 @@ import (
 	"awesomeProject1/internal/dto"
 	"awesomeProject1/internal/services"
 	"awesomeProject1/internal/utils"
+	pages "awesomeProject1/web/templates/pages"
+	"bytes"
+	"context"
+
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -20,9 +24,11 @@ func NewRoomHandler(roomService *services.RoomService) *RoomHandler {
 func (h *RoomHandler) CreateRoom(c *fiber.Ctx) error {
 	userID, err := utils.GetUserIDFromToken(c)
 	if err != nil {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-			"error": "Invalid token",
-		})
+		return c.Status(fiber.StatusUnauthorized).JSON(
+			fiber.Map{
+				"error": "Invalid token",
+			},
+		)
 	}
 
 	var request dto.CreateRoomRequest
@@ -34,24 +40,30 @@ func (h *RoomHandler) CreateRoom(c *fiber.Ctx) error {
 		// Save the uploaded file
 		savedPath, saveErr := utils.SaveUploadedFile(file, "rooms")
 		if saveErr != nil {
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-				"error": "Failed to save image",
-			})
+			return c.Status(fiber.StatusInternalServerError).JSON(
+				fiber.Map{
+					"error": "Failed to save image",
+				},
+			)
 		}
 		request.Avatar = savedPath
 	}
 
 	if request.Name == "" {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Room name is required",
-		})
+		return c.Status(fiber.StatusBadRequest).JSON(
+			fiber.Map{
+				"error": "Room name is required",
+			},
+		)
 	}
 
 	room, err := h.roomService.CreateRoom(userID, request)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": err.Error(),
-		})
+		return c.Status(fiber.StatusInternalServerError).JSON(
+			fiber.Map{
+				"error": err.Error(),
+			},
+		)
 	}
 
 	// Redirect immediately to the created room
@@ -61,131 +73,42 @@ func (h *RoomHandler) CreateRoom(c *fiber.Ctx) error {
 func (h *RoomHandler) GetRoomsList(c *fiber.Ctx) error {
 	userID, err := utils.GetUserIDFromToken(c)
 	if err != nil {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-			"error": "Invalid token",
-		})
+		return c.Status(fiber.StatusUnauthorized).JSON(
+			fiber.Map{
+				"error": "Invalid token",
+			},
+		)
 	}
 
 	rooms, err := h.roomService.GetRoomsList(userID)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": err.Error(),
-		})
+		return c.Status(fiber.StatusInternalServerError).JSON(
+			fiber.Map{
+				"error": err.Error(),
+			},
+		)
 	}
 
 	return c.JSON(rooms)
 }
 
-func (h *RoomHandler) RequestJoinRoom(c *fiber.Ctx) error {
-	userID, err := utils.GetUserIDFromToken(c)
-	if err != nil {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-			"error": "Invalid token",
-		})
-	}
-
-	var request dto.JoinRoomRequest
-	if err := c.BodyParser(&request); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid request body",
-		})
-	}
-
-	err = h.roomService.RequestJoinRoom(userID, request.RoomID)
-	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": err.Error(),
-		})
-	}
-
-	return c.JSON(fiber.Map{
-		"message": "Join request sent successfully",
-	})
-}
-
-func (h *RoomHandler) GetJoinRequests(c *fiber.Ctx) error {
-	userID, err := utils.GetUserIDFromToken(c)
-	if err != nil {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-			"error": "Invalid token",
-		})
-	}
-
-	roomID := c.Params("roomId")
-	if roomID == "" {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Room ID is required",
-		})
-	}
-
-	requests, err := h.roomService.GetJoinRequests(userID, roomID)
-	if err != nil {
-		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
-			"error": err.Error(),
-		})
-	}
-
-	return c.JSON(requests)
-}
-
-func (h *RoomHandler) HandleJoinRequest(c *fiber.Ctx) error {
-	userID, err := utils.GetUserIDFromToken(c)
-	if err != nil {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-			"error": "Invalid token",
-		})
-	}
-
-	var request dto.HandleJoinRequestRequest
-	if err := c.BodyParser(&request); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid request body",
-		})
-	}
-
-	err = h.roomService.HandleJoinRequest(userID, request.JoinRequestID, request.Action)
-	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": err.Error(),
-		})
-	}
-
-	return c.JSON(fiber.Map{
-		"message": "Join request handled successfully",
-	})
-}
-
-func (h *RoomHandler) GetUserJoinRequests(c *fiber.Ctx) error {
-	userID, err := utils.GetUserIDFromToken(c)
-	if err != nil {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-			"error": "Invalid token",
-		})
-	}
-
-	requests, err := h.roomService.GetUserJoinRequests(userID)
-	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": err.Error(),
-		})
-	}
-
-	return c.JSON(requests)
-}
-
 func (h *RoomHandler) UpdateRoom(c *fiber.Ctx) error {
 	userID, err := utils.GetUserIDFromToken(c)
 	if err != nil {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-			"error": "Invalid token",
-		})
+		return c.Status(fiber.StatusUnauthorized).JSON(
+			fiber.Map{
+				"error": "Invalid token",
+			},
+		)
 	}
 
 	roomID := c.Params("roomId")
 	if roomID == "" {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Room ID is required",
-		})
+		return c.Status(fiber.StatusBadRequest).JSON(
+			fiber.Map{
+				"error": "Room ID is required",
+			},
+		)
 	}
 
 	var request dto.UpdateRoomRequest
@@ -197,152 +120,147 @@ func (h *RoomHandler) UpdateRoom(c *fiber.Ctx) error {
 		// Save the uploaded file
 		savedPath, saveErr := utils.SaveUploadedFile(file, "rooms")
 		if saveErr != nil {
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-				"error": "Failed to save image",
-			})
+			return c.Status(fiber.StatusInternalServerError).JSON(
+				fiber.Map{
+					"error": "Failed to save image",
+				},
+			)
 		}
 		request.Avatar = savedPath
 	}
 
 	if request.Name == "" {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Room name is required",
-		})
+		return c.Status(fiber.StatusBadRequest).JSON(
+			fiber.Map{
+				"error": "Room name is required",
+			},
+		)
 	}
 
 	err = h.roomService.UpdateRoom(userID, roomID, request)
 	if err != nil {
-		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
-			"error": err.Error(),
-		})
+		return c.Status(fiber.StatusForbidden).JSON(
+			fiber.Map{
+				"error": err.Error(),
+			},
+		)
 	}
 
-	return c.JSON(fiber.Map{
-		"message": "Room updated successfully",
-	})
-}
-
-func (h *RoomHandler) ManageRoomMember(c *fiber.Ctx) error {
-	userID, err := utils.GetUserIDFromToken(c)
-	if err != nil {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-			"error": "Invalid token",
-		})
-	}
-
-	roomID := c.Params("roomId")
-	if roomID == "" {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Room ID is required",
-		})
-	}
-
-	var request dto.ManageRoomMemberRequest
-	if err := c.BodyParser(&request); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid request body",
-		})
-	}
-
-	err = h.roomService.ManageRoomMember(userID, roomID, request)
-	if err != nil {
-		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
-			"error": err.Error(),
-		})
-	}
-
-	return c.JSON(fiber.Map{
-		"message": "Member managed successfully",
-	})
+	return c.JSON(
+		fiber.Map{
+			"message": "Room updated successfully",
+		},
+	)
 }
 
 func (h *RoomHandler) DeleteRoom(c *fiber.Ctx) error {
 	userID, err := utils.GetUserIDFromToken(c)
 	if err != nil {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-			"error": "Invalid token",
-		})
+		return c.Status(fiber.StatusUnauthorized).JSON(
+			fiber.Map{
+				"error": "Invalid token",
+			},
+		)
 	}
 
 	roomID := c.Params("roomId")
 	if roomID == "" {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Room ID is required",
-		})
+		return c.Status(fiber.StatusBadRequest).JSON(
+			fiber.Map{
+				"error": "Room ID is required",
+			},
+		)
 	}
 
 	err = h.roomService.DeleteRoom(userID, roomID)
 	if err != nil {
-		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
-			"error": err.Error(),
-		})
+		return c.Status(fiber.StatusForbidden).JSON(
+			fiber.Map{
+				"error": err.Error(),
+			},
+		)
 	}
 
-	return c.JSON(fiber.Map{
-		"message": "Room deleted successfully",
-	})
+	return c.JSON(
+		fiber.Map{
+			"message": "Room deleted successfully",
+		},
+	)
 }
 
 func (h *RoomHandler) GetRoomMembers(c *fiber.Ctx) error {
-	userID, err := utils.GetUserIDFromToken(c)
-	if err != nil {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-			"error": "Invalid token",
-		})
-	}
-
 	roomID := c.Params("roomId")
 	if roomID == "" {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Room ID is required",
-		})
+		return c.Status(fiber.StatusBadRequest).JSON(
+			fiber.Map{
+				"error": "Room ID is required",
+			},
+		)
 	}
 
 	baseURL := c.Protocol() + "://" + c.Get("Host")
-	members, err := h.roomService.GetRoomMembers(userID, roomID, baseURL)
+	userID, err := utils.GetUserIDFromToken(c)
 	if err != nil {
-		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
-			"error": err.Error(),
-		})
+		return c.Status(fiber.StatusUnauthorized).JSON(
+			fiber.Map{
+				"error": "Invalid token",
+			},
+		)
+	}
+
+	members, err := h.roomService.GetRoomMembers(roomID, userID, baseURL)
+	if err != nil {
+		return c.Status(fiber.StatusForbidden).JSON(
+			fiber.Map{
+				"error": err.Error(),
+			},
+		)
 	}
 
 	return c.JSON(members)
 }
 
-func (h *RoomHandler) GetJoinedRooms(c *fiber.Ctx) error {
+func (h *RoomHandler) GetAllRoomsWithStatus(c *fiber.Ctx) error {
 	userID, err := utils.GetUserIDFromToken(c)
 	if err != nil {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-			"error": "Invalid token",
-		})
+		return c.Status(fiber.StatusUnauthorized).JSON(
+			fiber.Map{
+				"error": "Invalid token",
+			},
+		)
 	}
 
 	baseURL := c.Protocol() + "://" + c.Get("Host")
-	rooms, err := h.roomService.GetJoinedRooms(userID, baseURL)
+	rooms, err := h.roomService.GetAllRooms(userID, baseURL)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": err.Error(),
-		})
+		return c.Status(fiber.StatusInternalServerError).JSON(
+			fiber.Map{
+				"error": err.Error(),
+			},
+		)
 	}
 
 	return c.JSON(rooms)
 }
 
-func (h *RoomHandler) GetAllRoomsWithStatus(c *fiber.Ctx) error {
+func (h *RoomHandler) GetLiveRooms(c *fiber.Ctx) error {
 	userID, err := utils.GetUserIDFromToken(c)
 	if err != nil {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-			"error": "Invalid token",
-		})
+		userID = 0 // Allow anonymous users to see live rooms
 	}
 
 	baseURL := c.Protocol() + "://" + c.Get("Host")
 	rooms, err := h.roomService.GetAllRoomsWithStatus(userID, baseURL)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": err.Error(),
-		})
+		// Return an empty list or an error indicator partial
+		return c.Status(fiber.StatusInternalServerError).SendString("<div>Error loading rooms</div>")
 	}
 
-	return c.JSON(rooms)
+	// Render the RoomList component directly
+	var buf bytes.Buffer
+	component := pages.RoomList(rooms, true) // `true` indicates it's for the "live" view
+	if err := component.Render(context.Background(), &buf); err != nil {
+		return c.Status(fiber.StatusInternalServerError).SendString("<div>Render error</div>")
+	}
+	return c.Type("html").Send(buf.Bytes())
 }

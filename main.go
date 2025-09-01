@@ -37,13 +37,12 @@ func main() {
 
 	userRepo := sqlite.NewUserRepository(db)
 	roomRepo := sqlite.NewRoomRepository(db)
-	joinRequestRepo := sqlite.NewJoinRequestRepository(db)
 	voteRepo := sqlite.NewVoteRepository(db)
 
 	authService := services.NewAuthService(userRepo)
 	greetingService := services.NewGreetingService(userRepo)
 	profileService := services.NewProfileService(userRepo)
-	roomService := services.NewRoomService(roomRepo, joinRequestRepo, userRepo)
+	roomService := services.NewRoomService(roomRepo, userRepo)
 	voteService := services.NewVoteService(voteRepo, roomRepo)
 
 	authHandler := handlers.NewAuthHandler(authService, greetingService)
@@ -105,13 +104,12 @@ func main() {
 	protected.Get("/profile", profileHandler.GetProfile)
 
 	protected.Get("/rooms", roomHandler.GetRoomsList)
-	protected.Get("/rooms/joined", roomHandler.GetJoinedRooms)
+	protected.Get("/rooms/live", roomHandler.GetLiveRooms)
 	protected.Get("/rooms/all", roomHandler.GetAllRoomsWithStatus)
 	protected.Post("/rooms", roomHandler.CreateRoom)
 	protected.Put("/rooms/:roomId", roomHandler.UpdateRoom)
 	protected.Delete("/rooms/:roomId", roomHandler.DeleteRoom)
 	protected.Get("/rooms/:roomId/members", roomHandler.GetRoomMembers)
-	protected.Post("/rooms/:roomId/members/manage", roomHandler.ManageRoomMember)
 
 	// Pages (templ)
 	app.Get("/", pageHandler.Home)

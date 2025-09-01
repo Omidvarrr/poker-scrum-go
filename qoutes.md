@@ -198,3 +198,7 @@ Quantum computing: where maybe becomes a valid state
 Every commit message is a note to a future that may never read it
 The singularity is just recursion without a base case
 In the end, all code is just electrons dancing to the rhythm of logic
+Java: write once, debug everywhere
+Java is proof that just because millions of people use something doesn't mean it's good
+In Java, you don't just write code, you write code that writes code that configures code to eventually do something simple
+Java's a great language if you want to write 100 lines of code to do what takes 5 lines in Python

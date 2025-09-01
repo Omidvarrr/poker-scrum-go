@@ -2,8 +2,6 @@ package models
 
 import "time"
 
-type Role string
-
 type Room struct {
 	ID        string    `json:"id" db:"id"`
 	Name      string    `json:"name" db:"name"`

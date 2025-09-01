@@ -1,0 +1,394 @@
+package pages
+
+import "awesomeProject1/internal/dto"
+import "awesomeProject1/internal/models"
+import "fmt"
+
+func userVoteStatus(userID int, voteSession dto.VoteResponse) string {
+	for _, vote := range voteSession.Votes {
+		if vote.UserID == userID {
+			if voteSession.IsRevealed {
+				return vote.VoteValue
+			}
+			return `<svg class="vote-check-icon" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="3"/></svg>`
+		}
+	}
+	return "—"
+}
+
+func userVoteStatusClass(userID int, voteSession dto.VoteResponse) string {
+	for _, vote := range voteSession.Votes {
+		if vote.UserID == userID {
+			if voteSession.IsRevealed {
+				return "revealed"
+			}
+			return "completed"
+		}
+	}
+	return "pending"
+}
+
+func voteSummary(votes []models.Vote) string {
+	if len(votes) == 0 {
+		return "No votes cast"
+	}
+
+	total, count := 0, 0
+	for _, vote := range votes {
+		if len(vote.VoteValue) > 0 && vote.VoteValue[0] >= '0' && vote.VoteValue[0] <= '9' {
+			val := int(vote.VoteValue[0] - '0')
+			total += val
+			count++
+		}
+	}
+
+	if count > 0 {
+		avg := float64(total) / float64(count)
+		return fmt.Sprintf("Average: %.1f", avg)
+	}
+
+	return fmt.Sprintf("%d votes cast", len(votes))
+}
+
+func voteBreakdown(votes []models.Vote) map[string]int {
+	breakdown := make(map[string]int)
+	for _, vote := range votes {
+		breakdown[vote.VoteValue]++
+	}
+	return breakdown
+}
+
+func hasUserVoted(userID int, voteSession dto.VoteResponse) bool {
+	for _, vote := range voteSession.Votes {
+		if vote.UserID == userID {
+			return true
+		}
+	}
+	return false
+}
+
+func getUserVoteClass(userID int, value string, voteSession dto.VoteResponse) string {
+	for _, vote := range voteSession.Votes {
+		if vote.UserID == userID && vote.VoteValue == value {
+			return " selected"
+		}
+	}
+	return ""
+}
+
+templ VotingPage(room *dto.RoomResponse, members []dto.RoomMemberInfo, voteSession dto.VoteResponse, canManageVotes bool, currentUserID int) {
+	<div class="voting-container" id="voting-container">
+		@VotingHeader(room)
+		@VoteOptions(room.ID, voteSession, currentUserID)
+		@MembersList(room.ID, members, voteSession)
+		if voteSession.IsRevealed && len(voteSession.Votes) > 0 {
+			@VoteResults(voteSession.Votes)
+		}
+		@VoteControls(room.ID, voteSession.IsRevealed, canManageVotes)
+	</div>
+
+	<span id="current-user-id" style="display:none;">{ fmt.Sprintf("%d", currentUserID) }</span>
+	<script type="text/javascript">
+		window.currentUserID = parseInt(document.getElementById('current-user-id').textContent);
+		let ws = null;
+
+		function initWebSocket(roomId, userId) {
+			currentUserID = userId;
+			const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+			const wsUrl = `${protocol}//${window.location.host}/ws`;
+
+			ws = new WebSocket(wsUrl);
+
+			ws.onopen = function() {
+				console.log('WebSocket connected');
+				// Join the room
+				ws.send(JSON.stringify({
+					type: 'join_room',
+					room_id: roomId,
+					data: {
+						user_id: userId
+					}
+				}));
+			};
+
+			ws.onmessage = function(event) {
+				const message = JSON.parse(event.data);
+				handleWebSocketMessage(message);
+			};
+
+			ws.onclose = function() {
+				console.log('WebSocket disconnected, reconnecting...');
+				// Reconnect after 3 seconds
+				setTimeout(() => initWebSocket(roomId, userId), 3000);
+			};
+
+			ws.onerror = function(error) {
+				console.log('WebSocket error:', error);
+			};
+		}
+
+		function handleWebSocketMessage(message) {
+			console.log('WebSocket message received:', message);
+			switch (message.type) {
+				case 'vote_cast':
+					// Always refresh for vote cast to ensure all users see updated state
+					setTimeout(() => {
+						fetch(window.location.pathname)
+							.then(response => response.text())
+							.then(html => {
+								const parser = new DOMParser();
+								const doc = parser.parseFromString(html, 'text/html');
+								const newContainer = doc.querySelector('#voting-container');
+								if (newContainer) {
+									document.querySelector('#voting-container').innerHTML = newContainer.innerHTML;
+								}
+							});
+					}, 100);
+					break;
+				case 'votes_revealed':
+				case 'votes_reset':
+					// Always refresh for reveal and reset
+					setTimeout(() => {
+						fetch(window.location.pathname)
+							.then(response => response.text())
+							.then(html => {
+								const parser = new DOMParser();
+								const doc = parser.parseFromString(html, 'text/html');
+								const newContainer = doc.querySelector('#voting-container');
+								if (newContainer) {
+									document.querySelector('#voting-container').innerHTML = newContainer.innerHTML;
+								}
+							});
+					}, 100);
+					break;
+				case 'online_users_update':
+					// Could update online status indicators
+					break;
+			}
+		}
+
+		function selectVoteButton(selectedButton) {
+			// Remove selected class from all vote buttons
+			document.querySelectorAll('.vote-btn').forEach(btn => {
+				btn.classList.remove('selected');
+			});
+
+			// Add selected class to clicked button
+			selectedButton.classList.add('selected');
+		}
+
+		function castVote(button, voteValue) {
+			if (!ws || ws.readyState !== WebSocket.OPEN) {
+				console.error('WebSocket not connected');
+				return;
+			}
+
+			// Check if this button is already selected (toggle functionality)
+			if (button.classList.contains('selected')) {
+				// Deselect - remove selected class immediately and send empty vote
+				button.classList.remove('selected');
+				console.log('Deselecting vote');
+				ws.send(JSON.stringify({
+					type: 'cast_vote',
+					room_id: window.location.pathname.split('/').pop(),
+					data: {
+						vote_value: '' // Empty value to remove vote
+					}
+				}));
+			} else {
+				// Select new vote - update UI immediately
+				selectVoteButton(button);
+				console.log('Sending vote via WebSocket:', voteValue);
+				ws.send(JSON.stringify({
+					type: 'cast_vote',
+					room_id: window.location.pathname.split('/').pop(),
+					data: {
+						vote_value: voteValue
+					}
+				}));
+			}
+		}
+
+		function revealVotes(roomId) {
+			if (!ws || ws.readyState !== WebSocket.OPEN) {
+				console.error('WebSocket not connected');
+				return;
+			}
+
+			console.log('Revealing votes via WebSocket');
+			ws.send(JSON.stringify({
+				type: 'reveal_votes',
+				room_id: roomId
+			}));
+		}
+
+		function resetVotes(roomId) {
+			if (!ws || ws.readyState !== WebSocket.OPEN) {
+				console.error('WebSocket not connected');
+				return;
+			}
+
+			console.log('Resetting votes via WebSocket');
+			ws.send(JSON.stringify({
+				type: 'reset_votes',
+				room_id: roomId
+			}));
+		}
+
+
+		// Add event listeners for vote control buttons
+		document.addEventListener('click', function(e) {
+			if (e.target.closest('[data-action="reveal"]')) {
+				const roomId = e.target.closest('[data-action="reveal"]').dataset.roomId;
+				revealVotes(roomId);
+			} else if (e.target.closest('[data-action="reset"]')) {
+				const roomId = e.target.closest('[data-action="reset"]').dataset.roomId;
+				resetVotes(roomId);
+			}
+		});
+
+		// Initialize WebSocket immediately
+		const roomId = window.location.pathname.split('/').pop();
+		console.log('Vote page loaded!');
+		console.log('Room ID:', roomId);
+		console.log('Current user ID:', window.currentUserID);
+		console.log('Location:', window.location.href);
+
+		if (window.currentUserID) {
+			console.log('Starting WebSocket connection...');
+			initWebSocket(roomId, window.currentUserID);
+		} else {
+			console.error('Current user ID not found - cannot start WebSocket');
+		}
+	</script>
+}
+
+templ VotingHeader(room *dto.RoomResponse) {
+	<div class="voting-header">
+		<div class="room-profile">
+			<div class="room-avatar-large">
+				if room.Avatar != "" {
+					<img src={ room.Avatar } alt={ room.Name } class="room-avatar-img"/>
+				} else {
+					<span class="room-avatar-placeholder">🎯</span>
+				}
+			</div>
+			<div class="room-info">
+				<h1 class="room-title">{ room.Name }</h1>
+				<div class="room-meta">
+					<span class="room-id">ID: { room.ID }</span>
+					if room.IsOwner {
+						<span class="owner-badge">Owner</span>
+					}
+				</div>
+			</div>
+		</div>
+	</div>
+}
+
+templ VoteOptions(roomID string, voteSession dto.VoteResponse, currentUserID int) {
+	<div class="vote-section">
+		<div class="vote-title">
+			if voteSession.IsRevealed {
+				Voting Results
+			} else {
+				Cast Your Vote
+			}
+		</div>
+		<div class="vote-options">
+			for _, value := range []string{"1", "2", "3", "5", "8", "13", "21", "34", "☕"} {
+				<button class={ "vote-btn" + getUserVoteClass(currentUserID, value, voteSession) }
+						data-vote={ value }
+						onclick="castVote(this, this.dataset.vote)">
+					{ value }
+				</button>
+			}
+		</div>
+	</div>
+}
+
+templ MembersList(roomID string, members []dto.RoomMemberInfo, voteSession dto.VoteResponse) {
+	<div class="members-section">
+		<div class="members-title">
+			Room Members ({ fmt.Sprintf("%d", len(members)) })
+		</div>
+		<div class="user-list">
+			for _, member := range members {
+				@MemberItem(member, voteSession)
+			}
+		</div>
+	</div>
+}
+
+templ MemberItem(member dto.RoomMemberInfo, voteSession dto.VoteResponse) {
+	<div class="user-item">
+		<div class="user-info">
+			<div class="user-avatar">
+				if member.Avatar != "" {
+					<img src={ member.Avatar } alt="Avatar"/>
+				} else {
+					{ string(member.FirstName[0]) }
+				}
+				if member.IsOnline {
+					<div class="user-online"></div>
+				}
+			</div>
+			<div class="user-details">
+				<div class="user-name">{ member.FirstName + " " + member.LastName }</div>
+			</div>
+		</div>
+
+		<div class={ "vote-status-indicator " + userVoteStatusClass(member.UserID, voteSession) }>
+			@templ.Raw(userVoteStatus(member.UserID, voteSession))
+		</div>
+	</div>
+}
+
+templ VoteResults(votes []models.Vote) {
+	<div class="results-section">
+		<div class="results-title">Voting Results</div>
+		<div class="vote-summary">
+			{ voteSummary(votes) }
+		</div>
+		<div class="vote-breakdown">
+			for value, count := range voteBreakdown(votes) {
+				<div class="vote-result">
+					<div class="vote-value">{ value }</div>
+					<div class="vote-count">{ fmt.Sprintf("%d", count) } vote(s)</div>
+				</div>
+			}
+		</div>
+	</div>
+}
+
+templ VoteControls(roomID string, isRevealed bool, canManageVotes bool) {
+	<div class="vote-controls">
+		if canManageVotes {
+			if !isRevealed {
+				<button class="btn btn-primary" data-action="reveal" data-room-id={ roomID }>
+					<svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+						<path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/>
+						<circle cx="12" cy="12" r="3"/>
+					</svg>
+					Reveal Votes
+				</button>
+			} else {
+				<button class="btn btn-destructive" data-action="reset" data-room-id={ roomID }>
+					<svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+						<path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+						<polyline points="9,22 9,12 15,12 15,22"/>
+					</svg>
+					New Round
+				</button>
+			}
+		}
+	</div>
+}
+
+templ VoteSuccess(message string) {
+	<div class="vote-status success">✅ { message }</div>
+}
+
+templ VoteError(message string) {
+	<div class="vote-status error">❌ { message }</div>
+}

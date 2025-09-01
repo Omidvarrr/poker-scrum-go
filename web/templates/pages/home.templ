@@ -1,0 +1,151 @@
+package pages
+
+import "awesomeProject1/internal/dto"
+
+func getApiEndpoint(showOnlyMember bool) string {
+	if showOnlyMember {
+		return "/api/rooms/live"
+	}
+	return "/api/rooms/all"
+}
+
+templ HomePage(greeting dto.GreetingResponse, rooms []dto.RoomResponse) {
+	<div class="section active" id="home-section">
+		@WelcomeSection(greeting)
+		<div class="section-title">Live Rooms</div>
+		@RoomList(rooms, true)
+	</div>
+	@HomeWebSocket()
+}
+
+templ WelcomeSection(greeting dto.GreetingResponse) {
+	<div class="welcome-section">
+		<div class="welcome-greeting">{ greeting.Message }</div>
+		<img class="quote-icon" src="/static/images/quote.svg" alt="quote"/>
+		<div class="welcome-message">{ greeting.Quote }</div>
+	</div>
+}
+
+templ RoomList(rooms []dto.RoomResponse, showOnlyMember bool) {
+	<div class="room-list"
+		 hx-get={ getApiEndpoint(showOnlyMember) }
+		 hx-swap="innerHTML">
+		if len(rooms) == 0 {
+			<div class="empty-state">
+				if showOnlyMember {
+					There are no live rooms at the moment
+				} else {
+					No rooms available
+				}
+			</div>
+		} else {
+			for _, room := range rooms {
+				@RoomCard(room)
+			}
+		}
+	</div>
+}
+
+templ RoomCard(room dto.RoomResponse) {
+	<div class="room-card"
+		 data-room-id={ room.ID }
+		 style="cursor: pointer;"
+		 onclick="navigateToRoom(this)">
+
+		<div class="room-emoji">
+			if room.Avatar != "" {
+				<img src={ room.Avatar } alt={ room.Name } class="room-avatar-img"/>
+			} else {
+				<span>🎯</span>
+			}
+		</div>
+
+		<div class="room-name">{ room.Name }</div>
+	</div>
+
+	<script>
+		function navigateToRoom(element) {
+			const roomId = element.dataset.roomId;
+			window.location.href = '/rooms/' + roomId;
+		}
+	</script>
+}
+
+templ RoomJoinDialog(roomID string, roomName string) {
+	<div class="dialog-overlay" onclick="this.remove()">
+		<div class="dialog" onclick="event.stopPropagation()">
+			<div class="dialog-title">Join Room</div>
+			<div class="dialog-content">
+				<p>Do you want to join "{ roomName }"?</p>
+			</div>
+			<div class="dialog-actions">
+				<button class="dialog-btn secondary" onclick="this.closest('.dialog-overlay').remove()">Cancel</button>
+				<button class="dialog-btn primary"
+						onclick="window.location.href = '/rooms/' + '{ roomID }'">Join Room</button>
+			</div>
+		</div>
+	</div>
+}
+
+templ HomeWebSocket() {
+	<script type="text/javascript">
+		let homeWs = null;
+
+		function initHomeWebSocket() {
+			const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+			const wsUrl = `${protocol}//${window.location.host}/ws`;
+
+			homeWs = new WebSocket(wsUrl);
+
+			homeWs.onopen = function() {
+				console.log('Home WebSocket connected');
+				// Join global room updates channel
+				homeWs.send(JSON.stringify({
+					type: 'join_global_updates'
+				}));
+			};
+
+			homeWs.onmessage = function(event) {
+				const message = JSON.parse(event.data);
+				handleHomeWebSocketMessage(message);
+			};
+
+			homeWs.onclose = function() {
+				console.log('Home WebSocket disconnected, reconnecting...');
+				// Reconnect after 3 seconds
+				setTimeout(() => initHomeWebSocket(), 3000);
+			};
+
+			homeWs.onerror = function(error) {
+				console.log('Home WebSocket error:', error);
+			};
+		}
+
+		function handleHomeWebSocketMessage(message) {
+			console.log('Home WebSocket message received:', message);
+			switch (message.type) {
+				case 'room_member_update':
+				case 'user_joined_room':
+				case 'user_left_room':
+					// Refresh the rooms list to show updated online status
+					setTimeout(() => {
+						htmx.ajax('GET', '/api/rooms/live', {
+							target: '.room-list',
+							swap: 'innerHTML'
+						});
+					}, 100);
+					break;
+				case 'online_users_update':
+					// Could update online indicators on room cards
+					break;
+			}
+		}
+
+		// Initialize WebSocket when page loads
+		if (document.readyState === 'loading') {
+			document.addEventListener('DOMContentLoaded', initHomeWebSocket);
+		} else {
+			initHomeWebSocket();
+		}
+	</script>
+}

@@ -22,18 +22,6 @@ func (r *voteRepository) CreateVoteSession(session models.VoteSession) (models.V
 	return session, nil
 }
 
-func (r *voteRepository) GetVoteSession(sessionID string) (models.VoteSession, error) {
-	var session models.VoteSession
-	result := r.db.Preload("Votes").Preload("Votes.User").First(&session, "id = ?", sessionID)
-	if result.Error != nil {
-		if result.Error == gorm.ErrRecordNotFound {
-			return models.VoteSession{}, repositories.ErrNotFound
-		}
-		return models.VoteSession{}, result.Error
-	}
-	return session, nil
-}
-
 func (r *voteRepository) GetActiveVoteSession(roomID string) (models.VoteSession, error) {
 	var session models.VoteSession
 	result := r.db.Preload("Votes").Preload("Votes.User").
@@ -78,12 +66,6 @@ func (r *voteRepository) RemoveVote(userID int, roomID string, sessionID string)
 	result := r.db.Delete(&models.Vote{}, "room_id = ? AND user_id = ? AND session_id = ?",
 		roomID, userID, sessionID)
 	return result.Error
-}
-
-func (r *voteRepository) GetVotesBySession(sessionID string) ([]models.Vote, error) {
-	var votes []models.Vote
-	result := r.db.Preload("User").Find(&votes, "session_id = ?", sessionID)
-	return votes, result.Error
 }
 
 func (r *voteRepository) DeleteVotesBySession(sessionID string) error {

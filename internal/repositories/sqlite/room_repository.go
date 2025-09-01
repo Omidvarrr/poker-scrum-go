@@ -3,6 +3,7 @@ package sqlite
 import (
 	"awesomeProject1/internal/models"
 	repositories "awesomeProject1/internal/repositories"
+
 	"gorm.io/gorm"
 )
 
@@ -46,12 +47,9 @@ func (r *roomRepository) GetAllRooms() ([]models.Room, error) {
 	return rooms, result.Error
 }
 
-func (r *roomRepository) GetRoomsByUser(userID int) ([]models.Room, error) {
+func (r *roomRepository) GetRoomsByIDs(ids []string) ([]models.Room, error) {
 	var rooms []models.Room
-	result := r.db.Table("rooms").
-		Joins("JOIN room_members ON rooms.id = room_members.room_id").
-		Where("room_members.user_id = ?", userID).
-		Find(&rooms)
+	result := r.db.Where("id IN ?", ids).Find(&rooms)
 	return rooms, result.Error
 }
 
@@ -67,50 +65,6 @@ func (r *roomRepository) UpdateRoom(id string, name string, avatar string) error
 func (r *roomRepository) DeleteRoom(id string) error {
 	result := r.db.Delete(&models.Room{}, "id = ?", id)
 	return result.Error
-}
-
-func (r *roomRepository) GetRoomMembers(roomID string) ([]models.RoomMember, error) {
-	var members []models.RoomMember
-	result := r.db.Find(&members, "room_id = ?", roomID)
-	return members, result.Error
-}
-
-func (r *roomRepository) AddRoomMember(roomID string, userID int, role models.Role) error {
-	member := models.RoomMember{
-		RoomID: roomID,
-		UserID: userID,
-		Role:   role,
-	}
-	result := r.db.Create(&member)
-	return result.Error
-}
-
-func (r *roomRepository) RemoveRoomMember(roomID string, userID int) error {
-	result := r.db.Delete(&models.RoomMember{}, "room_id = ? AND user_id = ?", roomID, userID)
-	return result.Error
-}
-
-func (r *roomRepository) UpdateMemberRole(roomID string, userID int, role models.Role) error {
-	result := r.db.Model(&models.RoomMember{}).
-		Where("room_id = ? AND user_id = ?", roomID, userID).
-		Update("role", role)
-	return result.Error
-}
-
-func (r *roomRepository) IsUserInRoom(roomID string, userID int) (bool, error) {
-	var count int64
-	result := r.db.Model(&models.RoomMember{}).
-		Where("room_id = ? AND user_id = ?", roomID, userID).
-		Count(&count)
-	return count > 0, result.Error
-}
-
-func (r *roomRepository) IsUserAdmin(roomID string, userID int) (bool, error) {
-	var count int64
-	result := r.db.Model(&models.RoomMember{}).
-		Where("room_id = ? AND user_id = ? AND role = ?", roomID, userID, models.RoleAdmin).
-		Count(&count)
-	return count > 0, result.Error
 }
 
 func (r *roomRepository) IsUserOwner(roomID string, userID int) (bool, error) {

@@ -1,0 +1,80 @@
+package pages
+
+import "awesomeProject1/internal/dto"
+
+templ ProfilePage(profile dto.ProfileResponse) {
+	<div class="section active" id="profile-section">
+		<div class="section-title">Profile</div>
+		@ProfileInfo(profile)
+		@ProfileActions()
+	</div>
+}
+
+templ ProfileInfo(profile dto.ProfileResponse) {
+	<div class="profile-info-clean">
+		<div class="profile-avatar">
+			if profile.Avatar != "" {
+				<img src={ profile.Avatar } alt="Profile Avatar" class="profile-avatar-img"/>
+			} else {
+				<div class="profile-avatar-placeholder">
+					if len(profile.FirstName) > 0 {
+						{ string(profile.FirstName[0]) }
+					} else {
+						?
+					}
+				</div>
+			}
+		</div>
+
+		<div class="profile-details">
+			<div class="profile-name" id="profile-name">{ profile.FirstName + " " + profile.LastName }</div>
+			<div class="profile-email" id="profile-email">{ profile.Email }</div>
+		</div>
+	</div>
+}
+
+templ ProfileActions() {
+	<div class="profile-actions">
+		<button class="secondary-btn logout-btn" 
+				onclick="logout()">
+			Logout
+		</button>
+	</div>
+	
+	<script>
+		function logout() {
+			showLogoutDialog();
+		}
+
+		function showLogoutDialog() {
+			const dialog = document.createElement('div');
+			dialog.className = 'dialog-overlay';
+			dialog.innerHTML = `
+				<div class="dialog" onclick="event.stopPropagation()">
+					<div class="dialog-title">Confirm Logout</div>
+					<div class="dialog-content">
+						<p>Are you sure you want to logout?</p>
+					</div>
+					<div class="dialog-actions">
+						<button class="dialog-btn secondary" onclick="this.closest('.dialog-overlay').remove()">Cancel</button>
+						<button class="dialog-btn primary" onclick="confirmLogout()">Logout</button>
+					</div>
+				</div>
+			`;
+			dialog.onclick = function(e) {
+				if (e.target === dialog) dialog.remove();
+			};
+			document.body.appendChild(dialog);
+		}
+
+		function confirmLogout() {
+			// Remove the dialog
+			document.querySelector('.dialog-overlay')?.remove();
+			// Perform logout
+			fetch('/api/auth/logout', {method: 'POST', credentials: 'include'})
+				.then(() => window.location.href = '/login')
+				.catch(() => window.location.href = '/login');
+		}
+	</script>
+}
+

@@ -1,0 +1,54 @@
+package pages
+
+import "awesomeProject1/internal/dto"
+
+templ RoomsPage(allRooms []dto.RoomResponse) {
+	<div class="section active" id="rooms-section">
+		<div class="section-title">All Rooms</div>
+		@AllRoomsList(allRooms)
+	</div>
+	
+	<script>
+		function navigateToRoom(button) {
+			const roomId = button.getAttribute('data-room-id');
+			window.location.href = '/rooms/' + roomId;
+		}
+	</script>
+}
+
+templ AllRoomsList(rooms []dto.RoomResponse) {
+	<div class="room-list">
+		if len(rooms) == 0 {
+			<div class="empty-state">
+				No rooms available yet
+			</div>
+		} else {
+			for _, room := range rooms {
+				@AllRoomCard(room)
+			}
+		}
+	</div>
+}
+
+templ AllRoomCard(room dto.RoomResponse) {
+	<div class="room-card"
+		 data-room-id={ room.ID }
+		 style="cursor: pointer;"
+		 onclick="navigateToRoom(this)">
+
+		if room.IsOwner {
+			<div class="room-status owner" title="You own this room"></div>
+		}
+
+		<div class="room-emoji">
+			if room.Avatar != "" {
+				<img src={ room.Avatar } alt={ room.Name } class="room-avatar-img"/>
+			} else {
+				<span>🎯</span>
+			}
+		</div>
+
+		<div class="room-name">{ room.Name }</div>
+	</div>
+}
+

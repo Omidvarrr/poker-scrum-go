@@ -119,6 +119,7 @@ func (h *WebSocketHandler) addClient(roomID string, conn *websocket.Conn, userID
 		h.clients[roomID] = make(map[*websocket.Conn]int)
 	}
 	h.clients[roomID][conn] = userID
+	services.ActiveConnections.AddUser(roomID, userID)
 }
 
 func (h *WebSocketHandler) handleJoinGlobalUpdates(conn *websocket.Conn, msg WebSocketMessage) {
@@ -139,8 +140,9 @@ func (h *WebSocketHandler) removeClient(conn *websocket.Conn) {
 
 	// Remove from room clients
 	for roomID, roomClients := range h.clients {
-		if _, exists := roomClients[conn]; exists {
+		if userID, exists := roomClients[conn]; exists {
 			delete(roomClients, conn)
+			services.ActiveConnections.RemoveUser(roomID, userID)
 			if len(roomClients) == 0 {
 				delete(h.clients, roomID)
 			} else {

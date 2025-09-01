@@ -12,16 +12,17 @@ import (
 )
 
 type RoomService struct {
-	roomRepo        repositories.RoomRepository
-	joinRequestRepo repositories.JoinRequestRepository
-	userRepo        repositories.UserRepository
+	roomRepo repositories.RoomRepository
+	userRepo repositories.UserRepository
 }
 
-func NewRoomService(roomRepo repositories.RoomRepository, joinRequestRepo repositories.JoinRequestRepository, userRepo repositories.UserRepository) *RoomService {
+func NewRoomService(
+	roomRepo repositories.RoomRepository,
+	userRepo repositories.UserRepository,
+) *RoomService {
 	return &RoomService{
-		roomRepo:        roomRepo,
-		joinRequestRepo: joinRequestRepo,
-		userRepo:        userRepo,
+		roomRepo: roomRepo,
+		userRepo: userRepo,
 	}
 }
 
@@ -40,18 +41,16 @@ func (rs *RoomService) CreateRoom(userID int, request dto.CreateRoomRequest) (dt
 		return dto.RoomResponse{}, err
 	}
 
-	err = rs.roomRepo.AddRoomMember(roomID, userID, models.RoleAdmin)
 	if err != nil {
 		return dto.RoomResponse{}, err
 	}
 
 	return dto.RoomResponse{
-		ID:       createdRoom.ID,
-		Name:     createdRoom.Name,
-		Avatar:   createdRoom.Avatar,
-		OwnerID:  createdRoom.OwnerId,
-		IsOwner:  true,
-		IsMember: true,
+		ID:      createdRoom.ID,
+		Name:    createdRoom.Name,
+		Avatar:  createdRoom.Avatar,
+		OwnerID: createdRoom.OwnerId,
+		IsOwner: true,
 	}, nil
 }
 
@@ -71,27 +70,28 @@ func (rs *RoomService) GetRoomsList(userID int) (dto.RoomListResponse, error) {
 	var otherRoomResponses []dto.RoomResponse
 
 	for _, room := range myRooms {
-		myRoomResponses = append(myRoomResponses, dto.RoomResponse{
-			ID:       room.ID,
-			Name:     room.Name,
-			Avatar:   room.Avatar,
-			OwnerID:  room.OwnerId,
-			IsOwner:  true,
-			IsMember: true,
-		})
+		myRoomResponses = append(
+			myRoomResponses, dto.RoomResponse{
+				ID:      room.ID,
+				Name:    room.Name,
+				Avatar:  room.Avatar,
+				OwnerID: room.OwnerId,
+				IsOwner: true,
+			},
+		)
 	}
 
 	for _, room := range allRooms {
 		if room.OwnerId != userIDStr {
-			isMember, _ := rs.roomRepo.IsUserInRoom(room.ID, userID)
-			otherRoomResponses = append(otherRoomResponses, dto.RoomResponse{
-				ID:       room.ID,
-				Name:     room.Name,
-				Avatar:   room.Avatar,
-				OwnerID:  room.OwnerId,
-				IsOwner:  false,
-				IsMember: isMember,
-			})
+			otherRoomResponses = append(
+				otherRoomResponses, dto.RoomResponse{
+					ID:      room.ID,
+					Name:    room.Name,
+					Avatar:  room.Avatar,
+					OwnerID: room.OwnerId,
+					IsOwner: room.OwnerId == userIDStr,
+				},
+			)
 		}
 	}
 
@@ -99,103 +99,6 @@ func (rs *RoomService) GetRoomsList(userID int) (dto.RoomListResponse, error) {
 		MyRooms:    myRoomResponses,
 		OtherRooms: otherRoomResponses,
 	}, nil
-}
-
-func (rs *RoomService) RequestJoinRoom(userID int, roomID string) error {
-	_, err := rs.roomRepo.GetRoomById(roomID)
-	if err != nil {
-		return err
-	}
-
-	isMember, err := rs.roomRepo.IsUserInRoom(roomID, userID)
-	if err != nil {
-		return err
-	}
-	if isMember {
-		return errors.New("user is already a member of this room")
-	}
-
-	hasPending, err := rs.joinRequestRepo.HasPendingRequest(roomID, userID)
-	if err != nil {
-		return err
-	}
-	if hasPending {
-		return errors.New("user already has a pending request for this room")
-	}
-
-	request := models.JoinRequest{
-		RoomID: roomID,
-		UserID: userID,
-		Status: models.JoinRequestStatusPending,
-	}
-
-	_, err = rs.joinRequestRepo.CreateJoinRequest(request)
-	return err
-}
-
-func (rs *RoomService) GetJoinRequests(userID int, roomID string) ([]models.JoinRequest, error) {
-	isOwnerOrAdmin, err := rs.isOwnerOrAdmin(userID, roomID)
-	if err != nil {
-		return nil, err
-	}
-	if !isOwnerOrAdmin {
-		return nil, errors.New("user is not authorized to view join requests")
-	}
-
-	return rs.joinRequestRepo.GetJoinRequestsByRoom(roomID)
-}
-
-func (rs *RoomService) HandleJoinRequest(userID int, requestID int, action string) error {
-	request, err := rs.joinRequestRepo.GetJoinRequestById(requestID)
-	if err != nil {
-		return err
-	}
-
-	isOwnerOrAdmin, err := rs.isOwnerOrAdmin(userID, request.RoomID)
-	if err != nil {
-		return err
-	}
-	if !isOwnerOrAdmin {
-		return errors.New("user is not authorized to handle join requests")
-	}
-
-	var status models.JoinRequestStatus
-	switch action {
-	case "approve":
-		status = models.JoinRequestStatusApproved
-		err = rs.roomRepo.AddRoomMember(request.RoomID, request.UserID, models.RoleMember)
-		if err != nil {
-			return err
-		}
-	case "reject":
-		status = models.JoinRequestStatusRejected
-	default:
-		return errors.New("invalid action")
-	}
-
-	return rs.joinRequestRepo.UpdateJoinRequestStatus(requestID, status, userID)
-}
-
-func (rs *RoomService) GetUserJoinRequests(userID int) ([]models.JoinRequest, error) {
-	return rs.joinRequestRepo.GetJoinRequestsByUser(userID)
-}
-
-func (rs *RoomService) GetIncomingJoinRequests(userID int) ([]models.JoinRequest, error) {
-	rooms, err := rs.roomRepo.GetRoomsByOwner(userID)
-	if err != nil {
-		return nil, err
-	}
-
-	if len(rooms) == 0 {
-		return []models.JoinRequest{}, nil
-	}
-
-	var roomIDs []string
-	for _, room := range rooms {
-		roomIDs = append(roomIDs, room.ID)
-	}
-
-	return rs.joinRequestRepo.GetJoinRequestsByRooms(roomIDs)
 }
 
 func (rs *RoomService) UpdateRoom(userID int, roomID string, request dto.UpdateRoomRequest) error {
@@ -210,27 +113,6 @@ func (rs *RoomService) UpdateRoom(userID int, roomID string, request dto.UpdateR
 	return rs.roomRepo.UpdateRoom(roomID, request.Name, request.Avatar)
 }
 
-func (rs *RoomService) ManageRoomMember(userID int, roomID string, request dto.ManageRoomMemberRequest) error {
-	isOwner, err := rs.roomRepo.IsUserOwner(roomID, userID)
-	if err != nil {
-		return err
-	}
-	if !isOwner {
-		return errors.New("only room owner can manage members")
-	}
-
-	switch request.Action {
-	case "promote_to_admin":
-		return rs.roomRepo.UpdateMemberRole(roomID, request.UserID, models.RoleAdmin)
-	case "revoke_admin":
-		return rs.roomRepo.UpdateMemberRole(roomID, request.UserID, models.RoleMember)
-	case "remove":
-		return rs.roomRepo.RemoveRoomMember(roomID, request.UserID)
-	default:
-		return errors.New("invalid action")
-	}
-}
-
 func (rs *RoomService) DeleteRoom(userID int, roomID string) error {
 	isOwner, err := rs.roomRepo.IsUserOwner(roomID, userID)
 	if err != nil {
@@ -243,79 +125,65 @@ func (rs *RoomService) DeleteRoom(userID int, roomID string) error {
 	return rs.roomRepo.DeleteRoom(roomID)
 }
 
-func (rs *RoomService) GetRoomMembers(userID int, roomID string, baseURL string) (dto.RoomMembersResponse, error) {
-	members, err := rs.roomRepo.GetRoomMembers(roomID)
-	if err != nil {
-		return dto.RoomMembersResponse{}, err
+func (rs *RoomService) GetRoomMembers(roomID string, currentUserID int, baseURL string) (dto.RoomMembersResponse, error) {
+	activeUserIDs := ActiveConnections.GetUsersInRoom(roomID)
+
+	// Create a set to track users we've added to avoid duplicates
+	userMap := make(map[int]bool)
+	var memberInfos []dto.RoomMemberInfo
+
+	// Always include the current user first
+	if currentUserID > 0 {
+		user, err := rs.userRepo.GetUserById(currentUserID)
+		if err == nil {
+			isOnline := contains(activeUserIDs, currentUserID)
+			memberInfos = append(memberInfos, dto.RoomMemberInfo{
+				UserID:    user.ID,
+				FirstName: user.FirstName,
+				LastName:  user.LastName,
+				Avatar:    utils.ConvertToURL(user.Avatar, baseURL),
+				IsOnline:  isOnline,
+			})
+			userMap[currentUserID] = true
+		}
 	}
 
-	var memberInfos []dto.RoomMemberInfo
-	for _, member := range members {
-		user, err := rs.userRepo.GetUserById(member.UserID)
+	// Add other active users
+	for _, userID := range activeUserIDs {
+		if userMap[userID] {
+			continue // Skip if already added
+		}
+		user, err := rs.userRepo.GetUserById(userID)
 		if err != nil {
 			continue
 		}
-
 		memberInfos = append(memberInfos, dto.RoomMemberInfo{
 			UserID:    user.ID,
 			FirstName: user.FirstName,
 			LastName:  user.LastName,
 			Avatar:    utils.ConvertToURL(user.Avatar, baseURL),
-			Role:      string(member.Role),
-			IsOnline:  false,
+			IsOnline:  true,
 		})
+		userMap[userID] = true
 	}
 
 	return dto.RoomMembersResponse{
 		Members:       memberInfos,
-		OnlineMembers: []int{},
+		OnlineMembers: activeUserIDs,
 	}, nil
 }
 
-func (rs *RoomService) isOwnerOrAdmin(userID int, roomID string) (bool, error) {
-	isOwner, err := rs.roomRepo.IsUserOwner(roomID, userID)
-	if err != nil {
-		return false, err
-	}
-	if isOwner {
-		return true, nil
-	}
-
-	return rs.roomRepo.IsUserAdmin(roomID, userID)
-}
-
-func (rs *RoomService) GetJoinedRooms(userID int, baseURL string) ([]dto.RoomResponse, error) {
-	rooms, err := rs.roomRepo.GetRoomsByUser(userID)
-	if err != nil {
-		return nil, err
-	}
-
-	var roomResponses []dto.RoomResponse
-	userIDStr := strconv.Itoa(userID)
-
-	for _, room := range rooms {
-		isOwner := room.OwnerId == userIDStr
-
-		// Check if user is admin in this room
-		isAdmin, _ := rs.roomRepo.IsUserAdmin(room.ID, userID)
-
-		// Only include rooms where user is owner or admin
-		if isOwner || isAdmin {
-			roomResponses = append(roomResponses, dto.RoomResponse{
-				ID:       room.ID,
-				Name:     room.Name,
-				Avatar:   utils.ConvertToURL(room.Avatar, baseURL),
-				OwnerID:  room.OwnerId,
-				IsOwner:  isOwner,
-				IsMember: true,
-			})
+// Helper function to check if slice contains value
+func contains(slice []int, value int) bool {
+	for _, item := range slice {
+		if item == value {
+			return true
 		}
 	}
-
-	return roomResponses, nil
+	return false
 }
 
-func (rs *RoomService) GetAllRoomsWithStatus(userID int, baseURL string) ([]dto.RoomResponse, error) {
+func (rs *RoomService) GetAllRooms(userID int, baseURL string) ([]dto.RoomResponse, error) {
 	allRooms, err := rs.roomRepo.GetAllRooms()
 	if err != nil {
 		return nil, err
@@ -327,14 +195,46 @@ func (rs *RoomService) GetAllRoomsWithStatus(userID int, baseURL string) ([]dto.
 	for _, room := range allRooms {
 		isOwner := room.OwnerId == userIDStr
 
-		roomResponses = append(roomResponses, dto.RoomResponse{
-			ID:       room.ID,
-			Name:     room.Name,
-			Avatar:   utils.ConvertToURL(room.Avatar, baseURL),
-			OwnerID:  room.OwnerId,
-			IsOwner:  isOwner,
-			IsMember: true, // Everyone can access any room
-		})
+		roomResponses = append(
+			roomResponses, dto.RoomResponse{
+				ID:      room.ID,
+				Name:    room.Name,
+				Avatar:  utils.ConvertToURL(room.Avatar, baseURL),
+				OwnerID: room.OwnerId,
+				IsOwner: isOwner,
+			},
+		)
+	}
+
+	return roomResponses, nil
+}
+
+func (rs *RoomService) GetAllRoomsWithStatus(userID int, baseURL string) ([]dto.RoomResponse, error) {
+	activeRoomIDs := ActiveConnections.GetActiveRoomIDs()
+	if len(activeRoomIDs) == 0 {
+		return []dto.RoomResponse{}, nil
+	}
+
+	allRooms, err := rs.roomRepo.GetRoomsByIDs(activeRoomIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	var roomResponses []dto.RoomResponse
+	userIDStr := strconv.Itoa(userID)
+
+	for _, room := range allRooms {
+		isOwner := room.OwnerId == userIDStr
+
+		roomResponses = append(
+			roomResponses, dto.RoomResponse{
+				ID:      room.ID,
+				Name:    room.Name,
+				Avatar:  utils.ConvertToURL(room.Avatar, baseURL),
+				OwnerID: room.OwnerId,
+				IsOwner: isOwner,
+			},
+		)
 	}
 
 	return roomResponses, nil

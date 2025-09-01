@@ -22,35 +22,17 @@ type RoomRepository interface {
 	GetRoomById(id string) (models.Room, error)
 	GetRoomsByOwner(ownerID int) ([]models.Room, error)
 	GetAllRooms() ([]models.Room, error)
-	GetRoomsByUser(userID int) ([]models.Room, error)
+	GetRoomsByIDs(ids []string) ([]models.Room, error)
 	UpdateRoom(id string, name string, avatar string) error
 	DeleteRoom(id string) error
-	GetRoomMembers(roomID string) ([]models.RoomMember, error)
-	AddRoomMember(roomID string, userID int, role models.Role) error
-	RemoveRoomMember(roomID string, userID int) error
-	UpdateMemberRole(roomID string, userID int, role models.Role) error
-	IsUserInRoom(roomID string, userID int) (bool, error)
-	IsUserAdmin(roomID string, userID int) (bool, error)
 	IsUserOwner(roomID string, userID int) (bool, error)
-}
-
-type JoinRequestRepository interface {
-	CreateJoinRequest(request models.JoinRequest) (models.JoinRequest, error)
-	GetJoinRequestsByRoom(roomID string) ([]models.JoinRequest, error)
-	GetJoinRequestsByRooms(roomIDs []string) ([]models.JoinRequest, error)
-	GetJoinRequestsByUser(userID int) ([]models.JoinRequest, error)
-	GetJoinRequestById(id int) (models.JoinRequest, error)
-	UpdateJoinRequestStatus(id int, status models.JoinRequestStatus, handledBy int) error
-	HasPendingRequest(roomID string, userID int) (bool, error)
 }
 
 type VoteRepository interface {
 	CreateVoteSession(session models.VoteSession) (models.VoteSession, error)
-	GetVoteSession(sessionID string) (models.VoteSession, error)
 	GetActiveVoteSession(roomID string) (models.VoteSession, error)
 	RevealVoteSession(sessionID string) error
 	CastVote(vote models.Vote) error
 	RemoveVote(userID int, roomID string, sessionID string) error
-	GetVotesBySession(sessionID string) ([]models.Vote, error)
 	DeleteVotesBySession(sessionID string) error
 }

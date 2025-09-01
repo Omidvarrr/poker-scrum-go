@@ -12,7 +12,3 @@ type User struct {
 	CreatedAt        time.Time `json:"created_at" db:"created_at"`
 	ProfileCompleted bool      `json:"profile_completed" db:"profile_completed"`
 }
-
-func NewUser(email string, firstName string, lastName string, passwordHash string) *User {
-	return &User{Email: email, FirstName: firstName, LastName: lastName, PasswordHash: passwordHash}
-}

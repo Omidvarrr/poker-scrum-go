@@ -135,5 +135,5 @@ func (vs *VoteService) isOwnerOrAdmin(userID int, roomID string) (bool, error) {
 		return true, nil
 	}
 
-	return vs.roomRepo.IsUserAdmin(roomID, userID)
+	return false, nil
 }
