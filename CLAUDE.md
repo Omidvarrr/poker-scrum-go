@@ -1,0 +1,1 @@
+- generate template and build app each time you implement a thing and make sure it's work
