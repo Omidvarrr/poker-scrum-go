@@ -1,6 +1,9 @@
 # Multi-stage build for Go application
 FROM golang:1.23-alpine AS builder
 
+# Install build dependencies for CGO
+RUN apk add --no-cache gcc musl-dev
+
 # Install templ CLI for template generation
 RUN go install github.com/a-h/templ/cmd/templ@latest
 
