@@ -4,8 +4,6 @@
 
 # Documentation
 README.md
-*.md
-project.md
 
 # IDE files
 .vscode
