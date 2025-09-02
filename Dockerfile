@@ -1,5 +1,5 @@
 # Multi-stage build for Go application
-FROM golang:1.21-alpine AS builder
+FROM golang:1.23-alpine AS builder
 
 # Install templ CLI for template generation
 RUN go install github.com/a-h/templ/cmd/templ@latest
