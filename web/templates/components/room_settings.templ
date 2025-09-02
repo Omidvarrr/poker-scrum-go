@@ -78,31 +78,33 @@ templ DangerZone(roomID string) {
 	@ConfirmDialog("delete-room", "Delete Room", "Are you sure you want to delete this room? This action cannot be undone.", "Delete", "Cancel")
 
 	<script>
+		// Store roomID for use in confirmAction
+		window.currentRoomID = '{ roomID }';
+
 		function confirmAction(id) {
 			if (id === 'delete-room') {
-				fetch('/api/rooms/{ roomID }', {
+				fetch('/api/rooms/' + window.currentRoomID, {
 					method: 'DELETE',
 					credentials: 'include'
 				})
-				.then(response => {
-					if (response.ok) {
-						showToast('Room deleted successfully!', 'success');
-						setTimeout(() => {
-							window.location.href = '/rooms';
-						}, 1500);
-					} else {
-						return response.json().then(data => {
-							throw new Error(data.error || 'Failed to delete room');
-						});
-					}
-				})
-				.catch(error => {
-					showToast(error.message, 'error');
-				})
-				.finally(() => {
-					hideDialog('delete-room');
-				});
-			}
+			.then(response => {
+				if (response.ok) {
+					showToast('Room deleted successfully!', 'success');
+					setTimeout(() => {
+						window.location.href = '/rooms';
+					}, 1500);
+				} else {
+					return response.json().then(data => {
+						throw new Error(data.error || 'Failed to delete room');
+					});
+				}
+			})
+			.catch(error => {
+				showToast(error.message, 'error');
+			})
+			.finally(() => {
+				hideDialog('delete-room');
+			});
 		}
 	</script>
 }
