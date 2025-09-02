@@ -1,0 +1,30 @@
+package components
+
+import "awesomeProject1/internal/dto"
+
+templ RoomCard(room dto.RoomResponse) {
+	<div class="room-card"
+		 data-room-id={ room.ID }
+		 style="cursor: pointer;"
+		 onclick="navigateToRoom(this)">
+
+
+
+		<div class="room-emoji">
+			if room.Avatar != "" {
+				<img src={ room.Avatar } alt={ room.Name } class="room-avatar-img"/>
+			} else {
+				<span>🎯</span>
+			}
+		</div>
+
+		<div class="room-name">{ room.Name }</div>
+	</div>
+
+	<script>
+		function navigateToRoom(element) {
+			const roomId = element.dataset.roomId;
+			window.location.href = '/rooms/' + roomId;
+		}
+	</script>
+}

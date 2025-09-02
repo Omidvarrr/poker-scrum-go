@@ -1,0 +1,54 @@
+package pages
+
+import "awesomeProject1/internal/dto"
+import "awesomeProject1/web/templates/components"
+
+templ RoomSettingsPage(room *dto.RoomResponse) {
+	<div class="content">
+		<div class="section-title">Room Settings</div>
+		<div class="settings-container">
+			@components.RoomInfoSection(room.ID, *room)
+			@components.DangerZone(room.ID)
+		</div>
+	</div>
+
+	<script>
+		document.addEventListener('click', function(e) {
+			if (e.target.closest('.danger-btn')) {
+				showDialog(room.ID);
+			}
+		});
+
+		function showDialog(id) {
+			document.getElementById('dialog-' + id).style.display = 'flex';
+		}
+
+		function hideDialog(id) {
+			document.getElementById('dialog-' + id).style.display = 'none';
+		}
+
+		function confirmAction(id) {
+			fetch('/api/rooms/' + id, {
+				method: 'DELETE',
+				headers: {
+					'Authorization': 'Bearer ' + localStorage.getItem('token') || document.cookie.split('token=')[1]?.split(';')[0] || ''
+				}
+			})
+			.then(response => response.json())
+			.then(data => {
+				if (data.message) {
+					showToast('Room deleted successfully!', 'success');
+					setTimeout(() => {
+						window.location.href = '/';
+					}, 1000);
+				} else {
+					showToast('Error deleting room', 'error');
+				}
+			})
+			.catch(error => {
+				console.error('Error:', error);
+				showToast('Error deleting room', 'error');
+			});
+		}
+	</script>
+}

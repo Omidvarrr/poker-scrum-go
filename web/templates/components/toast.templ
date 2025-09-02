@@ -1,0 +1,12 @@
+package components
+
+templ ToastContainer() {
+	<div id="toast-container" class="toast-container"></div>
+}
+
+templ Toast(message string, toastType string) {
+	<div class={ "toast toast-" + toastType }>
+		{ message }
+		<button class="toast-close" onclick="this.parentElement.remove()">×</button>
+	</div>
+}
