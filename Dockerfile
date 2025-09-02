@@ -5,7 +5,7 @@ FROM golang:1.23-alpine AS builder
 RUN apk add --no-cache gcc musl-dev
 
 # Install templ CLI for template generation
-RUN go install github.com/a-h/templ/cmd/templ@latest
+RUN go install github.com/a-h/templ/cmd/templ@v0.3.943
 
 # Set working directory
 WORKDIR /app
