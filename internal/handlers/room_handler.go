@@ -190,9 +190,18 @@ func (h *RoomHandler) DeleteRoom(c *fiber.Ctx) error {
 
 	err = h.roomService.DeleteRoom(userID, roomID)
 	if err != nil {
-		return c.Status(fiber.StatusForbidden).JSON(
+		// Check if it's an ownership error
+		if err.Error() == "only room owner can delete room" {
+			return c.Status(fiber.StatusForbidden).JSON(
+				fiber.Map{
+					"error": err.Error(),
+				},
+			)
+		}
+		// For other errors, return internal server error
+		return c.Status(fiber.StatusInternalServerError).JSON(
 			fiber.Map{
-				"error": err.Error(),
+				"error": "Failed to delete room",
 			},
 		)
 	}

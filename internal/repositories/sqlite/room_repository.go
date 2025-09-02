@@ -55,9 +55,14 @@ func (r *roomRepository) GetRoomsByIDs(ids []string) ([]models.Room, error) {
 
 func (r *roomRepository) UpdateRoom(id string, name string, avatar string) error {
 	updates := map[string]interface{}{
-		"name":   name,
-		"avatar": avatar,
+		"name": name,
 	}
+
+	// Only update avatar if it's not empty
+	if avatar != "" {
+		updates["avatar"] = avatar
+	}
+
 	result := r.db.Model(&models.Room{}).Where("id = ?", id).Updates(updates)
 	return result.Error
 }
