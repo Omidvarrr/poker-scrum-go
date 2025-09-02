@@ -1736,17 +1736,17 @@ textarea:focus {
 
 .toast-success {
     border-color: #28a745;
-    background: rgba(40, 167, 69, 0.1);
+    background: #1a4d3a;
 }
 
 .toast-error {
     border-color: #dc2626;
-    background: rgba(220, 38, 38, 0.1);
+    background: #4d1a1a;
 }
 
 .toast-info {
     border-color: #1d9bf0;
-    background: rgba(29, 155, 240, 0.1);
+    background: #1a3a4d;
 }
 
 .toast-close {
