@@ -67,20 +67,6 @@ templ RoomInfoSection(roomID string, room dto.RoomResponse) {
 }
 
 
-templ ConfirmDialog(id string, title string, message string, confirmText string, cancelText string, confirmClass ...string) {
-	<div class="dialog-overlay" id={ "dialog-" + id } style="display: none;" onclick="hideDialog(id)">
-		<div class="dialog" onclick="event.stopPropagation()">
-			<div class="dialog-title">{ title }</div>
-			<div class="dialog-content">
-				<p>{ message }</p>
-			</div>
-			<div class="dialog-actions">
-				<button class="dialog-btn secondary" type="button" onclick="hideDialog(id)">{ cancelText }</button>
-				<button class="dialog-btn primary" type="button" onclick="confirmAction(id)">{ confirmText }</button>
-			</div>
-		</div>
-	</div>
-}
 
 templ DangerZone(roomID string) {
 	<div class="settings-section danger-zone">
