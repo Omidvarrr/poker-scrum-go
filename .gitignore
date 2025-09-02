@@ -24,3 +24,6 @@ hosts.ini
 .env
 logs/
 data/
+
+# Templ generated files
+*_templ.go
