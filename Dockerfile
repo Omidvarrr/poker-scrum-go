@@ -41,6 +41,7 @@ COPY --from=builder /app/main .
 # Copy static assets and templates
 COPY --from=builder /app/web ./web
 COPY --from=builder /app/migrations ./migrations
+COPY --from=builder /app/qoutes.md ./qoutes.md
 
 # Create data directory for uploads and database
 RUN mkdir -p data/uploads && chown -R appuser:appuser /app
