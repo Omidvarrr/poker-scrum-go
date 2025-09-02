@@ -183,6 +183,24 @@ func (h *WebSocketHandler) broadcastToRoom(roomID string, message WebSocketMessa
 	}
 }
 
+func (h *WebSocketHandler) broadcastToRoomExcluding(roomID string, message WebSocketMessage, excludeUserID int) {
+	h.mutex.RLock()
+	roomClients := h.clients[roomID]
+	h.mutex.RUnlock()
+
+	if roomClients == nil {
+		return
+	}
+
+	for conn, userID := range roomClients {
+		if userID != excludeUserID {
+			if err := conn.WriteJSON(message); err != nil {
+				log.Println("WebSocket write error:", err)
+			}
+		}
+	}
+}
+
 func (h *WebSocketHandler) broadcastToGlobalClients(message WebSocketMessage) {
 	h.mutex.RLock()
 	globalClients := make(map[*websocket.Conn]bool)
@@ -228,7 +246,7 @@ func (h *WebSocketHandler) broadcastOnlineUsers(roomID string) {
 	}
 }
 
-func (h *WebSocketHandler) BroadcastVoteCast(roomID string, userID int, vote string) {
+func (h *WebSocketHandler) BroadcastVoteCast(roomID string, userID int, vote string, excludeUserID int) {
 	message := WebSocketMessage{
 		Type:   "vote_cast",
 		RoomID: roomID,
@@ -237,7 +255,7 @@ func (h *WebSocketHandler) BroadcastVoteCast(roomID string, userID int, vote str
 			"vote":    vote,
 		},
 	}
-	h.broadcastToRoom(roomID, message)
+	h.broadcastToRoomExcluding(roomID, message, excludeUserID)
 }
 
 func (h *WebSocketHandler) BroadcastVotesRevealed(roomID string) {
@@ -287,8 +305,8 @@ func (h *WebSocketHandler) handleCastVote(conn *websocket.Conn, msg WebSocketMes
 		return
 	}
 
-	// Broadcast to all clients in the room
-	h.BroadcastVoteCast(msg.RoomID, userID, voteValue)
+	// Broadcast to all clients in the room except the voter
+	h.BroadcastVoteCast(msg.RoomID, userID, voteValue, userID)
 
 	// Send success response to the voting user
 	conn.WriteJSON(
