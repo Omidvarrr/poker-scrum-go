@@ -9,6 +9,7 @@ import "github.com/a-h/templ"
 import templruntime "github.com/a-h/templ/runtime"
 
 import "awesomeProject1/internal/dto"
+import "awesomeProject1/web/templates/components"
 
 func ProfilePage(profile dto.ProfileResponse) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
@@ -84,7 +85,7 @@ func ProfileInfo(profile dto.ProfileResponse) templ.Component {
 			var templ_7745c5c3_Var3 string
 			templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(profile.Avatar)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/pages/profile.templ`, Line: 17, Col: 29}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/pages/profile.templ`, Line: 18, Col: 29}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 			if templ_7745c5c3_Err != nil {
@@ -103,7 +104,7 @@ func ProfileInfo(profile dto.ProfileResponse) templ.Component {
 				var templ_7745c5c3_Var4 string
 				templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(string(profile.FirstName[0]))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/pages/profile.templ`, Line: 21, Col: 36}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/pages/profile.templ`, Line: 22, Col: 36}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
 				if templ_7745c5c3_Err != nil {
@@ -127,7 +128,7 @@ func ProfileInfo(profile dto.ProfileResponse) templ.Component {
 		var templ_7745c5c3_Var5 string
 		templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs(profile.FirstName + " " + profile.LastName)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/pages/profile.templ`, Line: 30, Col: 91}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/pages/profile.templ`, Line: 31, Col: 91}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
 		if templ_7745c5c3_Err != nil {
@@ -140,7 +141,7 @@ func ProfileInfo(profile dto.ProfileResponse) templ.Component {
 		var templ_7745c5c3_Var6 string
 		templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs(profile.Email)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/pages/profile.templ`, Line: 31, Col: 64}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/pages/profile.templ`, Line: 32, Col: 64}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
 		if templ_7745c5c3_Err != nil {
@@ -175,7 +176,15 @@ func ProfileActions() templ.Component {
 			templ_7745c5c3_Var7 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, "<div class=\"profile-actions\"><button class=\"secondary-btn logout-btn\" onclick=\"logout()\">Logout</button></div><script>\n\t\tfunction logout() {\n\t\t\tshowLogoutDialog();\n\t\t}\n\n\t\tfunction showLogoutDialog() {\n\t\t\tconst dialog = document.createElement('div');\n\t\t\tdialog.className = 'dialog-overlay';\n\t\t\tdialog.innerHTML = `\n\t\t\t\t<div class=\"dialog\" onclick=\"event.stopPropagation()\">\n\t\t\t\t\t<div class=\"dialog-title\">Confirm Logout</div>\n\t\t\t\t\t<div class=\"dialog-content\">\n\t\t\t\t\t\t<p>Are you sure you want to logout?</p>\n\t\t\t\t\t</div>\n\t\t\t\t\t<div class=\"dialog-actions\">\n\t\t\t\t\t\t<button class=\"dialog-btn secondary\" onclick=\"this.closest('.dialog-overlay').remove()\">Cancel</button>\n\t\t\t\t\t\t<button class=\"dialog-btn primary\" onclick=\"confirmLogout()\">Logout</button>\n\t\t\t\t\t</div>\n\t\t\t\t</div>\n\t\t\t`;\n\t\t\tdialog.onclick = function(e) {\n\t\t\t\tif (e.target === dialog) dialog.remove();\n\t\t\t};\n\t\t\tdocument.body.appendChild(dialog);\n\t\t}\n\n\t\tfunction confirmLogout() {\n\t\t\t// Remove the dialog\n\t\t\tdocument.querySelector('.dialog-overlay')?.remove();\n\t\t\t// Perform logout\n\t\t\tfetch('/api/auth/logout', {method: 'POST', credentials: 'include'})\n\t\t\t\t.then(() => window.location.href = '/login')\n\t\t\t\t.catch(() => window.location.href = '/login');\n\t\t}\n\t</script>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, "<div class=\"profile-actions\"><button class=\"secondary-btn logout-btn\" type=\"button\">Logout</button></div>")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = components.ConfirmDialog("logout", "Confirm Logout", "Are you sure you want to logout?", "Logout", "Cancel", "danger").Render(ctx, templ_7745c5c3_Buffer)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 13, "<script>\n\t\tdocument.addEventListener('click', function(e) {\n\t\t\tif (e.target.closest('.logout-btn')) {\n\t\t\t\tshowDialog('logout');\n\t\t\t}\n\t\t});\n\n\t\t// Override global functions for profile page\n\t\twindow.showDialog = function(id) {\n\t\t\tdocument.getElementById('dialog-' + id).style.display = 'flex';\n\t\t}\n\n\t\twindow.hideDialog = function(id) {\n\t\t\tdocument.getElementById('dialog-' + id).style.display = 'none';\n\t\t}\n\n\t\twindow.confirmAction = function(id) {\n\t\t\tif (id === 'logout') {\n\t\t\t\tfetch('/api/auth/logout', {method: 'POST', credentials: 'include'})\n\t\t\t\t\t.then(() => window.location.href = '/login')\n\t\t\t\t\t.catch(() => window.location.href = '/login');\n\t\t\t}\n\t\t}\n\t</script>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

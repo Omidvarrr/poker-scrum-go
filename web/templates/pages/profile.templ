@@ -1,6 +1,7 @@
 package pages
 
 import "awesomeProject1/internal/dto"
+import "awesomeProject1/web/templates/components"
 
 templ ProfilePage(profile dto.ProfileResponse) {
 	<div class="section active" id="profile-section">
@@ -35,46 +36,35 @@ templ ProfileInfo(profile dto.ProfileResponse) {
 
 templ ProfileActions() {
 	<div class="profile-actions">
-		<button class="secondary-btn logout-btn" 
-				onclick="logout()">
+		<button class="secondary-btn logout-btn" type="button">
 			Logout
 		</button>
 	</div>
-	
+
+	@components.ConfirmDialog("logout", "Confirm Logout", "Are you sure you want to logout?", "Logout", "Cancel", "danger")
+
 	<script>
-		function logout() {
-			showLogoutDialog();
+		document.addEventListener('click', function(e) {
+			if (e.target.closest('.logout-btn')) {
+				showDialog('logout');
+			}
+		});
+
+		// Override global functions for profile page
+		window.showDialog = function(id) {
+			document.getElementById('dialog-' + id).style.display = 'flex';
 		}
 
-		function showLogoutDialog() {
-			const dialog = document.createElement('div');
-			dialog.className = 'dialog-overlay';
-			dialog.innerHTML = `
-				<div class="dialog" onclick="event.stopPropagation()">
-					<div class="dialog-title">Confirm Logout</div>
-					<div class="dialog-content">
-						<p>Are you sure you want to logout?</p>
-					</div>
-					<div class="dialog-actions">
-						<button class="dialog-btn secondary" onclick="this.closest('.dialog-overlay').remove()">Cancel</button>
-						<button class="dialog-btn primary" onclick="confirmLogout()">Logout</button>
-					</div>
-				</div>
-			`;
-			dialog.onclick = function(e) {
-				if (e.target === dialog) dialog.remove();
-			};
-			document.body.appendChild(dialog);
+		window.hideDialog = function(id) {
+			document.getElementById('dialog-' + id).style.display = 'none';
 		}
 
-		function confirmLogout() {
-			// Remove the dialog
-			document.querySelector('.dialog-overlay')?.remove();
-			// Perform logout
-			fetch('/api/auth/logout', {method: 'POST', credentials: 'include'})
-				.then(() => window.location.href = '/login')
-				.catch(() => window.location.href = '/login');
+		window.confirmAction = function(id) {
+			if (id === 'logout') {
+				fetch('/api/auth/logout', {method: 'POST', credentials: 'include'})
+					.then(() => window.location.href = '/login')
+					.catch(() => window.location.href = '/login');
+			}
 		}
 	</script>
 }
-

@@ -18,6 +18,42 @@ templ Base(title string, content templ.Component) {
 						window.location.href = '/login';
 					}
 				});
+
+				// Toast notification function
+				function showToast(message, type = 'success') {
+					const container = document.getElementById('toast-container');
+					if (!container) return;
+
+					const toast = document.createElement('div');
+					toast.className = `toast toast-${type}`;
+					toast.innerHTML = `
+						${message}
+						<button class="toast-close" onclick="this.parentElement.remove()">×</button>
+					`;
+
+					container.appendChild(toast);
+
+					// Auto remove after 5 seconds
+					setTimeout(() => {
+						if (toast.parentElement) {
+							toast.remove();
+						}
+					}, 5000);
+				}
+
+				// Dialog functions
+				function showDialog(id) {
+					document.getElementById('dialog-' + id).style.display = 'flex';
+				}
+
+				function hideDialog(id) {
+					document.getElementById('dialog-' + id).style.display = 'none';
+				}
+
+				function confirmAction(id) {
+					// This will be overridden by the calling component
+					console.log('Confirm action for dialog:', id);
+				}
 			</script>
 		</head>
 		<body>
@@ -33,6 +69,7 @@ templ AppShell(path string, content templ.Component) {
 			@content
 		</div>
 		@BottomNav(path)
+		<div id="toast-container" class="toast-container"></div>
 	</div>
 }
 

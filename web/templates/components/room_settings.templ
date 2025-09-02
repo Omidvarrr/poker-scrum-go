@@ -1,8 +1,6 @@
 package components
 
 import "awesomeProject1/internal/dto"
-import "fmt"
-import "strings"
 
 templ RoomSettingsDrawer(roomID string, room dto.RoomResponse) {
 	<div class="drawer-overlay" onclick="this.remove()">
@@ -59,14 +57,7 @@ templ RoomInfoSection(roomID string, room dto.RoomResponse) {
 				}
 			</script>
 			
-			if room.Avatar != "" {
-				<div class="current-room-image">
-					<span class="form-label">Current Image:</span>
-					<div class="current-room-preview">
-						<img src={ room.Avatar } alt="Current Room Image" class="current-room-img"/>
-					</div>
-				</div>
-			}
+
 			
 			<button type="submit" class="primary-btn">
 				Update Room
@@ -78,21 +69,40 @@ templ RoomInfoSection(roomID string, room dto.RoomResponse) {
 
 templ DangerZone(roomID string) {
 	<div class="settings-section danger-zone">
-		<h3 class="settings-section-title danger">Danger Zone</h3>
-		
-		<button class="danger-btn" 
-				onclick="confirmDeleteRoom('{ roomID }')">
-			🗑️ Delete Room
+		<button class="danger-btn" type="button" onclick="showDialog('delete-room')">
+			Delete Room
 		</button>
 	</div>
-	
+
+	@ConfirmDialog("delete-room", "Delete Room", "Are you sure you want to delete this room? This action cannot be undone.", "Delete", "Cancel")
+
 	<script>
-		function confirmDeleteRoom(roomId) {
-			if (confirm('Are you sure you want to delete this room? This action cannot be undone.')) {
-				htmx.ajax('DELETE', '/api/rooms/' + roomId, {target: 'body', swap: 'innerHTML'});
+		function confirmAction(id) {
+			if (id === 'delete-room') {
+				fetch('/api/rooms/{ roomID }', {
+					method: 'DELETE',
+					credentials: 'include'
+				})
+				.then(response => {
+					if (response.ok) {
+						showToast('Room deleted successfully!', 'success');
+						setTimeout(() => {
+							window.location.href = '/rooms';
+						}, 1500);
+					} else {
+						return response.json().then(data => {
+							throw new Error(data.error || 'Failed to delete room');
+						});
+					}
+				})
+				.catch(error => {
+					showToast(error.message, 'error');
+				})
+				.finally(() => {
+					hideDialog('delete-room');
+				});
 			}
 		}
-		
 	</script>
 }
 
@@ -102,4 +112,19 @@ templ RoomUpdateSuccess() {
 
 templ RoomUpdateError(message string) {
 	<div class="error-message-small">❌ { message }</div>
+}
+
+templ DeleteConfirmationDialog(roomID string) {
+	<div class="dialog-overlay" id={ "delete-dialog-" + roomID } style="display: none;" onclick="hideDeleteDialog('{ roomID }')">
+		<div class="dialog" onclick="event.stopPropagation()">
+			<div class="dialog-title">Delete Room</div>
+			<div class="dialog-content">
+				<p>Are you sure you want to delete this room? This action cannot be undone.</p>
+			</div>
+			<div class="dialog-actions">
+				<button class="dialog-btn secondary" onclick="hideDeleteDialog('{ roomID }')">Cancel</button>
+				<button class="dialog-btn primary" onclick="confirmDeleteRoom('{ roomID }')">Delete</button>
+			</div>
+		</div>
+	</div>
 }

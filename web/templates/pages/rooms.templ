@@ -1,6 +1,7 @@
 package pages
 
 import "awesomeProject1/internal/dto"
+import "awesomeProject1/web/templates/components"
 
 templ RoomsPage(allRooms []dto.RoomResponse) {
 	<div class="section active" id="rooms-section">
@@ -24,31 +25,10 @@ templ AllRoomsList(rooms []dto.RoomResponse) {
 			</div>
 		} else {
 			for _, room := range rooms {
-				@AllRoomCard(room)
+				@components.RoomCard(room)
 			}
 		}
 	</div>
 }
 
-templ AllRoomCard(room dto.RoomResponse) {
-	<div class="room-card"
-		 data-room-id={ room.ID }
-		 style="cursor: pointer;"
-		 onclick="navigateToRoom(this)">
-
-		if room.IsOwner {
-			<div class="room-status owner" title="You own this room"></div>
-		}
-
-		<div class="room-emoji">
-			if room.Avatar != "" {
-				<img src={ room.Avatar } alt={ room.Name } class="room-avatar-img"/>
-			} else {
-				<span>🎯</span>
-			}
-		</div>
-
-		<div class="room-name">{ room.Name }</div>
-	</div>
-}
 

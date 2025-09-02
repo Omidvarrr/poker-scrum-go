@@ -4,9 +4,11 @@ import (
 	"awesomeProject1/internal/dto"
 	"awesomeProject1/internal/services"
 	"awesomeProject1/internal/utils"
+	"awesomeProject1/web/templates/components"
 	pages "awesomeProject1/web/templates/pages"
 	"bytes"
 	"context"
+	"fmt"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -66,8 +68,22 @@ func (h *RoomHandler) CreateRoom(c *fiber.Ctx) error {
 		)
 	}
 
-	// Redirect immediately to the created room
-	return c.Redirect("/rooms/"+room.ID, fiber.StatusFound)
+	// Show success message and redirect
+	return c.SendString(fmt.Sprintf(`
+		<script>
+			// Keep button disabled during redirect
+			const btn = document.getElementById('create-btn');
+			if (btn) {
+				btn.disabled = true;
+				btn.textContent = 'Redirecting...';
+			}
+			
+			showToast('Room "%s" created successfully!', 'success');
+			setTimeout(() => {
+				window.location.href = '/rooms/%s';
+			}, 1500);
+		</script>
+	`, room.Name, room.ID))
 }
 
 func (h *RoomHandler) GetRoomsList(c *fiber.Ctx) error {
@@ -139,18 +155,18 @@ func (h *RoomHandler) UpdateRoom(c *fiber.Ctx) error {
 
 	err = h.roomService.UpdateRoom(userID, roomID, request)
 	if err != nil {
-		return c.Status(fiber.StatusForbidden).JSON(
-			fiber.Map{
-				"error": err.Error(),
-			},
-		)
+		return c.SendString(fmt.Sprintf(`
+			<script>
+				showToast('%s', 'error');
+			</script>
+		`, err.Error()))
 	}
 
-	return c.JSON(
-		fiber.Map{
-			"message": "Room updated successfully",
-		},
-	)
+	return c.SendString(`
+		<script>
+			showToast('Room updated successfully!', 'success');
+		</script>
+	`)
 }
 
 func (h *RoomHandler) DeleteRoom(c *fiber.Ctx) error {
@@ -261,6 +277,53 @@ func (h *RoomHandler) GetLiveRooms(c *fiber.Ctx) error {
 	component := pages.RoomList(rooms, true) // `true` indicates it's for the "live" view
 	if err := component.Render(context.Background(), &buf); err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString("<div>Render error</div>")
+	}
+	return c.Type("html").Send(buf.Bytes())
+}
+
+func (h *RoomHandler) GetRoomSettings(c *fiber.Ctx) error {
+	userID, err := utils.GetUserIDFromToken(c)
+	if err != nil {
+		return c.Status(fiber.StatusUnauthorized).JSON(
+			fiber.Map{
+				"error": "Invalid token",
+			},
+		)
+	}
+
+	roomID := c.Params("roomId")
+	if roomID == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(
+			fiber.Map{
+				"error": "Room ID is required",
+			},
+		)
+	}
+
+	baseURL := c.Protocol() + "://" + c.Get("Host")
+	room, err := h.roomService.GetRoomByID(roomID, userID, baseURL)
+	if err != nil {
+		return c.Status(fiber.StatusForbidden).JSON(
+			fiber.Map{
+				"error": err.Error(),
+			},
+		)
+	}
+
+	// Only allow room owners to access settings
+	if !room.IsOwner {
+		return c.Status(fiber.StatusForbidden).JSON(
+			fiber.Map{
+				"error": "Only room owners can access settings",
+			},
+		)
+	}
+
+	// Render the room settings drawer
+	var buf bytes.Buffer
+	component := components.RoomSettingsDrawer(roomID, *room)
+	if err := component.Render(context.Background(), &buf); err != nil {
+		return c.Status(fiber.StatusInternalServerError).SendString("Render error")
 	}
 	return c.Type("html").Send(buf.Bytes())
 }

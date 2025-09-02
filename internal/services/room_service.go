@@ -209,6 +209,26 @@ func (rs *RoomService) GetAllRooms(userID int, baseURL string) ([]dto.RoomRespon
 	return roomResponses, nil
 }
 
+func (rs *RoomService) GetRoomByID(roomID string, userID int, baseURL string) (*dto.RoomResponse, error) {
+	room, err := rs.roomRepo.GetRoomById(roomID)
+	if err != nil {
+		return nil, err
+	}
+
+	userIDStr := strconv.Itoa(userID)
+	isOwner := room.OwnerId == userIDStr
+
+	response := &dto.RoomResponse{
+		ID:      room.ID,
+		Name:    room.Name,
+		Avatar:  utils.ConvertToURL(room.Avatar, baseURL),
+		OwnerID: room.OwnerId,
+		IsOwner: isOwner,
+	}
+
+	return response, nil
+}
+
 func (rs *RoomService) GetAllRoomsWithStatus(userID int, baseURL string) ([]dto.RoomResponse, error) {
 	activeRoomIDs := ActiveConnections.GetActiveRoomIDs()
 	if len(activeRoomIDs) == 0 {

@@ -143,15 +143,20 @@ func (h *WebSocketHandler) removeClient(conn *websocket.Conn) {
 		if userID, exists := roomClients[conn]; exists {
 			delete(roomClients, conn)
 			services.ActiveConnections.RemoveUser(roomID, userID)
+
+			// Always broadcast user left event to global clients
+			h.mutex.Unlock()
+			h.broadcastToGlobalClients(WebSocketMessage{
+				Type:   "user_left_room",
+				RoomID: roomID,
+			})
+			h.mutex.Lock()
+
 			if len(roomClients) == 0 {
 				delete(h.clients, roomID)
 			} else {
 				h.mutex.Unlock()
 				h.broadcastOnlineUsers(roomID)
-				h.broadcastToGlobalClients(WebSocketMessage{
-					Type:   "user_left_room",
-					RoomID: roomID,
-				})
 				h.mutex.Lock()
 			}
 			break

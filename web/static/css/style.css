@@ -872,6 +872,12 @@ textarea:focus {
     border: none;
 }
 
+.dialog-btn.primary.danger {
+    background: #dc2626;
+    color: white;
+    border: none;
+}
+
 .dialog-btn.secondary {
     background: transparent;
     color: #71767b;
@@ -989,8 +995,8 @@ textarea:focus {
 
 .user-online {
     position: absolute;
-    bottom: 0;
-    right: 0;
+    bottom: 2px;
+    right: 2px;
     width: 10px;
     height: 10px;
     background: #28a745;
@@ -1449,7 +1455,8 @@ textarea:focus {
     border-bottom: 1px solid #2f3336;
 }
 
-.settings-section:last-child {
+.settings-section:last-child,
+.settings-section.danger-zone {
     border-bottom: none;
 }
 
@@ -1702,6 +1709,79 @@ textarea:focus {
     object-fit: cover;
 }
 
+/* Toast Notifications */
+.toast-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 10000;
+    max-width: 400px;
+}
+
+.toast {
+    background: #0a0a0a;
+    border: 1px solid #2f3336;
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin-bottom: 8px;
+    color: #ffffff;
+    font-size: 14px;
+    font-weight: 500;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    animation: toastSlideIn 0.3s ease-out;
+}
+
+.toast-success {
+    border-color: #28a745;
+    background: rgba(40, 167, 69, 0.1);
+}
+
+.toast-error {
+    border-color: #dc2626;
+    background: rgba(220, 38, 38, 0.1);
+}
+
+.toast-info {
+    border-color: #1d9bf0;
+    background: rgba(29, 155, 240, 0.1);
+}
+
+.toast-close {
+    background: none;
+    border: none;
+    color: #71767b;
+    font-size: 18px;
+    cursor: pointer;
+    padding: 0;
+    margin-left: 12px;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+}
+
+.toast-close:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #ffffff;
+}
+
+@keyframes toastSlideIn {
+    from {
+        opacity: 0;
+        transform: translateX(100%);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
 /* App Credits */
 .app-credits {
     text-align: center;
@@ -1857,7 +1937,7 @@ textarea:focus {
 .room-list {
     display: flex;
     flex-wrap: wrap;
-    justify-content: flex-start;
+    justify-content: center;
     gap: 16px;
     padding: 0;
     margin: 0;
@@ -1867,7 +1947,7 @@ textarea:focus {
     background: #101010;
     border: 1px solid #2f3336;
     border-radius: 16px;
-    padding: 20px;
+    padding: 16px;
     text-align: center;
     transition: border-color 0.2s ease;
     cursor: pointer;
@@ -1875,18 +1955,24 @@ textarea:focus {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    width: calc(33.333% - 12px);
-    min-width: 150px;
+    width: calc(25% - 12px);
+    min-width: 140px;
     aspect-ratio: 1 / 1;
 }
 
 .room-card:hover {
-    border-color: #1d9bf0;
+    border-color: #ffffff;
     background: #181818;
 }
 
 /* Responsive adjustments */
 @media (max-width: 768px) {
+    .room-card {
+        width: calc(33.333% - 12px);
+    }
+}
+
+@media (max-width: 600px) {
     .room-card {
         width: calc(50% - 8px);
     }
@@ -1899,15 +1985,15 @@ textarea:focus {
 }
 
 .room-emoji {
-    font-size: 3rem;
-    margin-bottom: 12px;
+    font-size: 2.5rem;
+    margin-bottom: 8px;
     line-height: 1;
 }
 
 .room-emoji .room-avatar-img {
-    width: 64px;
-    height: 64px;
-    border-radius: 50%;
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
     object-fit: cover;
 }
 
@@ -1923,6 +2009,7 @@ textarea:focus {
     align-items: center;
     gap: 16px;
     padding: 16px 0;
+    position: relative;
 }
 
 .room-avatar-large {
@@ -1978,4 +2065,27 @@ textarea:focus {
     border-radius: 4px;
     font-size: 0.75rem;
     font-weight: 600;
+}
+
+.room-settings-btn {
+    position: absolute;
+    top: 16px;
+    right: 0;
+    background: transparent;
+    border: 1px solid #2f3336;
+    color: #a1a3a6;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.room-settings-btn:hover {
+    border-color: #1d9bf0;
+    color: #1d9bf0;
+    background: rgba(29, 155, 240, 0.1);
 }

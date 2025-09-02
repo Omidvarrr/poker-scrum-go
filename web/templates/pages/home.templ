@@ -1,6 +1,7 @@
 package pages
 
 import "awesomeProject1/internal/dto"
+import "awesomeProject1/web/templates/components"
 
 func getApiEndpoint(showOnlyMember bool) string {
 	if showOnlyMember {
@@ -40,36 +41,12 @@ templ RoomList(rooms []dto.RoomResponse, showOnlyMember bool) {
 			</div>
 		} else {
 			for _, room := range rooms {
-				@RoomCard(room)
+				@components.RoomCard(room)
 			}
 		}
 	</div>
 }
 
-templ RoomCard(room dto.RoomResponse) {
-	<div class="room-card"
-		 data-room-id={ room.ID }
-		 style="cursor: pointer;"
-		 onclick="navigateToRoom(this)">
-
-		<div class="room-emoji">
-			if room.Avatar != "" {
-				<img src={ room.Avatar } alt={ room.Name } class="room-avatar-img"/>
-			} else {
-				<span>🎯</span>
-			}
-		</div>
-
-		<div class="room-name">{ room.Name }</div>
-	</div>
-
-	<script>
-		function navigateToRoom(element) {
-			const roomId = element.dataset.roomId;
-			window.location.href = '/rooms/' + roomId;
-		}
-	</script>
-}
 
 templ RoomJoinDialog(roomID string, roomName string) {
 	<div class="dialog-overlay" onclick="this.remove()">
@@ -124,19 +101,19 @@ templ HomeWebSocket() {
 		function handleHomeWebSocketMessage(message) {
 			console.log('Home WebSocket message received:', message);
 			switch (message.type) {
-				case 'room_member_update':
 				case 'user_joined_room':
 				case 'user_left_room':
 					// Refresh the rooms list to show updated online status
+					// Use a slightly longer delay for user_left_room to ensure ActiveConnections are updated
+					const delay = message.type === 'user_left_room' ? 200 : 100;
 					setTimeout(() => {
 						htmx.ajax('GET', '/api/rooms/live', {
 							target: '.room-list',
 							swap: 'innerHTML'
 						});
-					}, 100);
+					}, delay);
 					break;
 				case 'online_users_update':
-					// Could update online indicators on room cards
 					break;
 			}
 		}

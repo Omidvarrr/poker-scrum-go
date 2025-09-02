@@ -52,10 +52,39 @@ func voteSummary(votes []models.Vote) string {
 
 	if count > 0 {
 		avg := float64(total) / float64(count)
-		return fmt.Sprintf("Average: %.1f", avg)
+		nearestChoice := roundToNearestChoice(avg)
+		return fmt.Sprintf("Average: %d", nearestChoice)
 	}
 
 	return fmt.Sprintf("%d votes cast", len(votes))
+}
+
+func roundToNearestChoice(avg float64) int {
+	choices := []int{1, 2, 3, 5, 8, 13, 21, 34}
+
+	if avg <= 1 {
+		return 1
+	}
+
+	minDiff := 999.0
+	nearest := 1
+
+	for _, choice := range choices {
+		diff := abs(avg - float64(choice))
+		if diff < minDiff {
+			minDiff = diff
+			nearest = choice
+		}
+	}
+
+	return nearest
+}
+
+func abs(x float64) float64 {
+	if x < 0 {
+		return -x
+	}
+	return x
 }
 
 func voteBreakdown(votes []models.Vote) map[string]int {
@@ -131,20 +160,20 @@ func VotingPage(room *dto.RoomResponse, members []dto.RoomMemberInfo, voteSessio
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "</div><span id=\"current-user-id\" style=\"display:none;\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "</div><div id=\"room-settings-container\"></div><span id=\"current-user-id\" style=\"display:none;\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var2 string
 		templ_7745c5c3_Var2, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", currentUserID))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/pages/vote.templ`, Line: 90, Col: 84}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/pages/vote.templ`, Line: 120, Col: 84}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var2))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "</span><script type=\"text/javascript\">\n\t\twindow.currentUserID = parseInt(document.getElementById('current-user-id').textContent);\n\t\tlet ws = null;\n\n\t\tfunction initWebSocket(roomId, userId) {\n\t\t\tcurrentUserID = userId;\n\t\t\tconst protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';\n\t\t\tconst wsUrl = `${protocol}//${window.location.host}/ws`;\n\n\t\t\tws = new WebSocket(wsUrl);\n\n\t\t\tws.onopen = function() {\n\t\t\t\tconsole.log('WebSocket connected');\n\t\t\t\t// Join the room\n\t\t\t\tws.send(JSON.stringify({\n\t\t\t\t\ttype: 'join_room',\n\t\t\t\t\troom_id: roomId,\n\t\t\t\t\tdata: {\n\t\t\t\t\t\tuser_id: userId\n\t\t\t\t\t}\n\t\t\t\t}));\n\t\t\t};\n\n\t\t\tws.onmessage = function(event) {\n\t\t\t\tconst message = JSON.parse(event.data);\n\t\t\t\thandleWebSocketMessage(message);\n\t\t\t};\n\n\t\t\tws.onclose = function() {\n\t\t\t\tconsole.log('WebSocket disconnected, reconnecting...');\n\t\t\t\t// Reconnect after 3 seconds\n\t\t\t\tsetTimeout(() => initWebSocket(roomId, userId), 3000);\n\t\t\t};\n\n\t\t\tws.onerror = function(error) {\n\t\t\t\tconsole.log('WebSocket error:', error);\n\t\t\t};\n\t\t}\n\n\t\tfunction handleWebSocketMessage(message) {\n\t\t\tconsole.log('WebSocket message received:', message);\n\t\t\tswitch (message.type) {\n\t\t\t\tcase 'vote_cast':\n\t\t\t\t\t// Always refresh for vote cast to ensure all users see updated state\n\t\t\t\t\tsetTimeout(() => {\n\t\t\t\t\t\tfetch(window.location.pathname)\n\t\t\t\t\t\t\t.then(response => response.text())\n\t\t\t\t\t\t\t.then(html => {\n\t\t\t\t\t\t\t\tconst parser = new DOMParser();\n\t\t\t\t\t\t\t\tconst doc = parser.parseFromString(html, 'text/html');\n\t\t\t\t\t\t\t\tconst newContainer = doc.querySelector('#voting-container');\n\t\t\t\t\t\t\t\tif (newContainer) {\n\t\t\t\t\t\t\t\t\tdocument.querySelector('#voting-container').innerHTML = newContainer.innerHTML;\n\t\t\t\t\t\t\t\t}\n\t\t\t\t\t\t\t});\n\t\t\t\t\t}, 100);\n\t\t\t\t\tbreak;\n\t\t\t\tcase 'votes_revealed':\n\t\t\t\tcase 'votes_reset':\n\t\t\t\t\t// Always refresh for reveal and reset\n\t\t\t\t\tsetTimeout(() => {\n\t\t\t\t\t\tfetch(window.location.pathname)\n\t\t\t\t\t\t\t.then(response => response.text())\n\t\t\t\t\t\t\t.then(html => {\n\t\t\t\t\t\t\t\tconst parser = new DOMParser();\n\t\t\t\t\t\t\t\tconst doc = parser.parseFromString(html, 'text/html');\n\t\t\t\t\t\t\t\tconst newContainer = doc.querySelector('#voting-container');\n\t\t\t\t\t\t\t\tif (newContainer) {\n\t\t\t\t\t\t\t\t\tdocument.querySelector('#voting-container').innerHTML = newContainer.innerHTML;\n\t\t\t\t\t\t\t\t}\n\t\t\t\t\t\t\t});\n\t\t\t\t\t}, 100);\n\t\t\t\t\tbreak;\n\t\t\t\tcase 'online_users_update':\n\t\t\t\t\t// Could update online status indicators\n\t\t\t\t\tbreak;\n\t\t\t}\n\t\t}\n\n\t\tfunction selectVoteButton(selectedButton) {\n\t\t\t// Remove selected class from all vote buttons\n\t\t\tdocument.querySelectorAll('.vote-btn').forEach(btn => {\n\t\t\t\tbtn.classList.remove('selected');\n\t\t\t});\n\n\t\t\t// Add selected class to clicked button\n\t\t\tselectedButton.classList.add('selected');\n\t\t}\n\n\t\tfunction castVote(button, voteValue) {\n\t\t\tif (!ws || ws.readyState !== WebSocket.OPEN) {\n\t\t\t\tconsole.error('WebSocket not connected');\n\t\t\t\treturn;\n\t\t\t}\n\n\t\t\t// Check if this button is already selected (toggle functionality)\n\t\t\tif (button.classList.contains('selected')) {\n\t\t\t\t// Deselect - remove selected class immediately and send empty vote\n\t\t\t\tbutton.classList.remove('selected');\n\t\t\t\tconsole.log('Deselecting vote');\n\t\t\t\tws.send(JSON.stringify({\n\t\t\t\t\ttype: 'cast_vote',\n\t\t\t\t\troom_id: window.location.pathname.split('/').pop(),\n\t\t\t\t\tdata: {\n\t\t\t\t\t\tvote_value: '' // Empty value to remove vote\n\t\t\t\t\t}\n\t\t\t\t}));\n\t\t\t} else {\n\t\t\t\t// Select new vote - update UI immediately\n\t\t\t\tselectVoteButton(button);\n\t\t\t\tconsole.log('Sending vote via WebSocket:', voteValue);\n\t\t\t\tws.send(JSON.stringify({\n\t\t\t\t\ttype: 'cast_vote',\n\t\t\t\t\troom_id: window.location.pathname.split('/').pop(),\n\t\t\t\t\tdata: {\n\t\t\t\t\t\tvote_value: voteValue\n\t\t\t\t\t}\n\t\t\t\t}));\n\t\t\t}\n\t\t}\n\n\t\tfunction revealVotes(roomId) {\n\t\t\tif (!ws || ws.readyState !== WebSocket.OPEN) {\n\t\t\t\tconsole.error('WebSocket not connected');\n\t\t\t\treturn;\n\t\t\t}\n\n\t\t\tconsole.log('Revealing votes via WebSocket');\n\t\t\tws.send(JSON.stringify({\n\t\t\t\ttype: 'reveal_votes',\n\t\t\t\troom_id: roomId\n\t\t\t}));\n\t\t}\n\n\t\tfunction resetVotes(roomId) {\n\t\t\tif (!ws || ws.readyState !== WebSocket.OPEN) {\n\t\t\t\tconsole.error('WebSocket not connected');\n\t\t\t\treturn;\n\t\t\t}\n\n\t\t\tconsole.log('Resetting votes via WebSocket');\n\t\t\tws.send(JSON.stringify({\n\t\t\t\ttype: 'reset_votes',\n\t\t\t\troom_id: roomId\n\t\t\t}));\n\t\t}\n\n\n\t\t// Add event listeners for vote control buttons\n\t\tdocument.addEventListener('click', function(e) {\n\t\t\tif (e.target.closest('[data-action=\"reveal\"]')) {\n\t\t\t\tconst roomId = e.target.closest('[data-action=\"reveal\"]').dataset.roomId;\n\t\t\t\trevealVotes(roomId);\n\t\t\t} else if (e.target.closest('[data-action=\"reset\"]')) {\n\t\t\t\tconst roomId = e.target.closest('[data-action=\"reset\"]').dataset.roomId;\n\t\t\t\tresetVotes(roomId);\n\t\t\t}\n\t\t});\n\n\t\t// Initialize WebSocket immediately\n\t\tconst roomId = window.location.pathname.split('/').pop();\n\t\tconsole.log('Vote page loaded!');\n\t\tconsole.log('Room ID:', roomId);\n\t\tconsole.log('Current user ID:', window.currentUserID);\n\t\tconsole.log('Location:', window.location.href);\n\n\t\tif (window.currentUserID) {\n\t\t\tconsole.log('Starting WebSocket connection...');\n\t\t\tinitWebSocket(roomId, window.currentUserID);\n\t\t} else {\n\t\t\tconsole.error('Current user ID not found - cannot start WebSocket');\n\t\t}\n\t</script>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "</span><script type=\"text/javascript\">\n\t\twindow.currentUserID = parseInt(document.getElementById('current-user-id').textContent);\n\t\tlet ws = null;\n\t\tlet shouldReconnect = true;\n\n\t\tfunction initWebSocket(roomId, userId) {\n\t\t\tif (!shouldReconnect) return;\n\t\t\t\n\t\t\tcurrentUserID = userId;\n\t\t\tconst protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';\n\t\t\tconst wsUrl = `${protocol}//${window.location.host}/ws`;\n\n\t\t\tws = new WebSocket(wsUrl);\n\n\t\t\tws.onopen = function() {\n\t\t\t\tconsole.log('WebSocket connected');\n\t\t\t\t// Join the room\n\t\t\t\tws.send(JSON.stringify({\n\t\t\t\t\ttype: 'join_room',\n\t\t\t\t\troom_id: roomId,\n\t\t\t\t\tdata: {\n\t\t\t\t\t\tuser_id: userId\n\t\t\t\t\t}\n\t\t\t\t}));\n\t\t\t};\n\n\t\t\tws.onmessage = function(event) {\n\t\t\t\tconst message = JSON.parse(event.data);\n\t\t\t\thandleWebSocketMessage(message);\n\t\t\t};\n\n\t\t\tws.onclose = function() {\n\t\t\t\tconsole.log('WebSocket disconnected');\n\t\t\t\tif (shouldReconnect) {\n\t\t\t\t\tconsole.log('Reconnecting...');\n\t\t\t\t\tsetTimeout(() => initWebSocket(roomId, userId), 3000);\n\t\t\t\t}\n\t\t\t};\n\n\t\t\tws.onerror = function(error) {\n\t\t\t\tconsole.log('WebSocket error:', error);\n\t\t\t};\n\t\t}\n\n\t\t// Clean up WebSocket when leaving the page\n\t\twindow.addEventListener('beforeunload', function() {\n\t\t\tshouldReconnect = false;\n\t\t\tif (ws && ws.readyState === WebSocket.OPEN) {\n\t\t\t\tws.close();\n\t\t\t}\n\t\t});\n\n\t\t// Also handle HTMX navigation\n\t\tdocument.addEventListener('htmx:beforeRequest', function() {\n\t\t\tshouldReconnect = false;\n\t\t\tif (ws && ws.readyState === WebSocket.OPEN) {\n\t\t\t\tws.close();\n\t\t\t}\n\t\t});\n\n\t\tfunction handleWebSocketMessage(message) {\n\t\t\tconsole.log('WebSocket message received:', message);\n\t\t\tswitch (message.type) {\n\t\t\t\tcase 'vote_cast':\n\t\t\t\t\t// Always refresh for vote cast to ensure all users see updated state\n\t\t\t\t\tsetTimeout(() => {\n\t\t\t\t\t\tfetch(window.location.pathname)\n\t\t\t\t\t\t\t.then(response => response.text())\n\t\t\t\t\t\t\t.then(html => {\n\t\t\t\t\t\t\t\tconst parser = new DOMParser();\n\t\t\t\t\t\t\t\tconst doc = parser.parseFromString(html, 'text/html');\n\t\t\t\t\t\t\t\tconst newContainer = doc.querySelector('#voting-container');\n\t\t\t\t\t\t\t\tif (newContainer) {\n\t\t\t\t\t\t\t\t\tdocument.querySelector('#voting-container').innerHTML = newContainer.innerHTML;\n\t\t\t\t\t\t\t\t}\n\t\t\t\t\t\t\t});\n\t\t\t\t\t}, 100);\n\t\t\t\t\tbreak;\n\t\t\t\tcase 'votes_revealed':\n\t\t\t\tcase 'votes_reset':\n\t\t\t\t\t// Always refresh for reveal and reset\n\t\t\t\t\tsetTimeout(() => {\n\t\t\t\t\t\tfetch(window.location.pathname)\n\t\t\t\t\t\t\t.then(response => response.text())\n\t\t\t\t\t\t\t.then(html => {\n\t\t\t\t\t\t\t\tconst parser = new DOMParser();\n\t\t\t\t\t\t\t\tconst doc = parser.parseFromString(html, 'text/html');\n\t\t\t\t\t\t\t\tconst newContainer = doc.querySelector('#voting-container');\n\t\t\t\t\t\t\t\tif (newContainer) {\n\t\t\t\t\t\t\t\t\tdocument.querySelector('#voting-container').innerHTML = newContainer.innerHTML;\n\t\t\t\t\t\t\t\t}\n\t\t\t\t\t\t\t});\n\t\t\t\t\t}, 100);\n\t\t\t\t\tbreak;\n\t\t\t\tcase 'online_users_update':\n\t\t\t\t\t// Refresh the members list when users join/leave or online status changes\n\t\t\t\t\tsetTimeout(() => {\n\t\t\t\t\t\tfetch(window.location.pathname)\n\t\t\t\t\t\t\t.then(response => response.text())\n\t\t\t\t\t\t\t.then(html => {\n\t\t\t\t\t\t\t\tconst parser = new DOMParser();\n\t\t\t\t\t\t\t\tconst doc = parser.parseFromString(html, 'text/html');\n\t\t\t\t\t\t\t\tconst newContainer = doc.querySelector('#voting-container');\n\t\t\t\t\t\t\t\tif (newContainer) {\n\t\t\t\t\t\t\t\t\tdocument.querySelector('#voting-container').innerHTML = newContainer.innerHTML;\n\t\t\t\t\t\t\t\t}\n\t\t\t\t\t\t\t});\n\t\t\t\t\t}, 100);\n\t\t\t\t\tbreak;\n\t\t\t}\n\t\t}\n\n\t\tfunction selectVoteButton(selectedButton) {\n\t\t\t// Remove selected class from all vote buttons\n\t\t\tdocument.querySelectorAll('.vote-btn').forEach(btn => {\n\t\t\t\tbtn.classList.remove('selected');\n\t\t\t});\n\n\t\t\t// Add selected class to clicked button\n\t\t\tselectedButton.classList.add('selected');\n\t\t}\n\n\t\tfunction castVote(button, voteValue) {\n\t\t\tif (!ws || ws.readyState !== WebSocket.OPEN) {\n\t\t\t\tconsole.error('WebSocket not connected');\n\t\t\t\treturn;\n\t\t\t}\n\n\t\t\t// Check if this button is already selected (toggle functionality)\n\t\t\tif (button.classList.contains('selected')) {\n\t\t\t\t// Deselect - remove selected class immediately and send empty vote\n\t\t\t\tbutton.classList.remove('selected');\n\t\t\t\tconsole.log('Deselecting vote');\n\t\t\t\tws.send(JSON.stringify({\n\t\t\t\t\ttype: 'cast_vote',\n\t\t\t\t\troom_id: window.location.pathname.split('/').pop(),\n\t\t\t\t\tdata: {\n\t\t\t\t\t\tvote_value: '' // Empty value to remove vote\n\t\t\t\t\t}\n\t\t\t\t}));\n\t\t\t} else {\n\t\t\t\t// Select new vote - update UI immediately\n\t\t\t\tselectVoteButton(button);\n\t\t\t\tconsole.log('Sending vote via WebSocket:', voteValue);\n\t\t\t\tws.send(JSON.stringify({\n\t\t\t\t\ttype: 'cast_vote',\n\t\t\t\t\troom_id: window.location.pathname.split('/').pop(),\n\t\t\t\t\tdata: {\n\t\t\t\t\t\tvote_value: voteValue\n\t\t\t\t\t}\n\t\t\t\t}));\n\t\t\t}\n\t\t}\n\n\t\tfunction revealVotes(roomId) {\n\t\t\tif (!ws || ws.readyState !== WebSocket.OPEN) {\n\t\t\t\tconsole.error('WebSocket not connected');\n\t\t\t\treturn;\n\t\t\t}\n\n\t\t\tconsole.log('Revealing votes via WebSocket');\n\t\t\tws.send(JSON.stringify({\n\t\t\t\ttype: 'reveal_votes',\n\t\t\t\troom_id: roomId\n\t\t\t}));\n\t\t}\n\n\t\tfunction resetVotes(roomId) {\n\t\t\tif (!ws || ws.readyState !== WebSocket.OPEN) {\n\t\t\t\tconsole.error('WebSocket not connected');\n\t\t\t\treturn;\n\t\t\t}\n\n\t\t\tconsole.log('Resetting votes via WebSocket');\n\t\t\tws.send(JSON.stringify({\n\t\t\t\ttype: 'reset_votes',\n\t\t\t\troom_id: roomId\n\t\t\t}));\n\t\t}\n\n\t\tfunction openRoomSettings() {\n\t\t\tconst roomId = window.location.pathname.split('/').pop();\n\t\t\twindow.location.href = '/rooms/' + roomId + '/settings';\n\t\t}\n\n\t\t// Add event listeners for vote control buttons and settings\n\t\tdocument.addEventListener('click', function(e) {\n\t\t\tif (e.target.closest('[data-action=\"reveal\"]')) {\n\t\t\t\tconst roomId = e.target.closest('[data-action=\"reveal\"]').dataset.roomId;\n\t\t\t\trevealVotes(roomId);\n\t\t\t} else if (e.target.closest('[data-action=\"reset\"]')) {\n\t\t\t\tconst roomId = e.target.closest('[data-action=\"reset\"]').dataset.roomId;\n\t\t\t\tresetVotes(roomId);\n\t\t\t} else if (e.target.closest('.room-settings-btn')) {\n\t\t\t\topenRoomSettings();\n\t\t\t}\n\t\t});\n\n\t\t// Initialize WebSocket immediately\n\t\tconst roomId = window.location.pathname.split('/').pop();\n\t\tconsole.log('Vote page loaded!');\n\t\tconsole.log('Room ID:', roomId);\n\t\tconsole.log('Current user ID:', window.currentUserID);\n\t\tconsole.log('Location:', window.location.href);\n\n\t\tif (window.currentUserID) {\n\t\t\tconsole.log('Starting WebSocket connection...');\n\t\t\tinitWebSocket(roomId, window.currentUserID);\n\t\t} else {\n\t\t\tconsole.error('Current user ID not found - cannot start WebSocket');\n\t\t}\n\t</script>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -185,7 +214,7 @@ func VotingHeader(room *dto.RoomResponse) templ.Component {
 			var templ_7745c5c3_Var4 string
 			templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(room.Avatar)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/pages/vote.templ`, Line: 271, Col: 27}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/pages/vote.templ`, Line: 340, Col: 27}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
 			if templ_7745c5c3_Err != nil {
@@ -198,7 +227,7 @@ func VotingHeader(room *dto.RoomResponse) templ.Component {
 			var templ_7745c5c3_Var5 string
 			templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs(room.Name)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/pages/vote.templ`, Line: 271, Col: 45}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/pages/vote.templ`, Line: 340, Col: 45}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
 			if templ_7745c5c3_Err != nil {
@@ -221,36 +250,33 @@ func VotingHeader(room *dto.RoomResponse) templ.Component {
 		var templ_7745c5c3_Var6 string
 		templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs(room.Name)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/pages/vote.templ`, Line: 277, Col: 38}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/pages/vote.templ`, Line: 346, Col: 38}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, "</h1><div class=\"room-meta\"><span class=\"room-id\">ID: ")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		var templ_7745c5c3_Var7 string
-		templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs(room.ID)
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/pages/vote.templ`, Line: 279, Col: 40}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 11, "</span> ")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, "</h1><div class=\"room-meta\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if room.IsOwner {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, "<span class=\"owner-badge\">Owner</span>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 11, "<span class=\"owner-badge\">Owner</span>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 13, "</div></div></div></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, "</div></div>")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		if room.IsOwner {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 13, "<button class=\"room-settings-btn\" type=\"button\" title=\"Room Settings\"><svg xmlns=\"http://www.w3.org/2000/svg\" fill=\"none\" viewBox=\"0 0 24 24\" stroke-width=\"1.5\" stroke=\"currentColor\" class=\"size-6\" width=\"16\" height=\"16\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" d=\"M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.325.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.431l-1.003.827c-.293.241-.438.613-.43.992a7.723 7.723 0 0 1 0 .255c-.008.378.137.75.43.991l1.004.827c.424.35.534.955.26 1.43l-1.298 2.247a1.125 1.125 0 0 1-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.47 6.47 0 0 1-.22.128c-.331.183-.581.495-.644.869l-.213 1.281c-.09.543-.56.94-1.11.94h-2.594c-.55 0-1.019-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 0 1-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 0 1-1.369-.49l-1.297-2.247a1.125 1.125 0 0 1 .26-1.431l1.004-.827c.292-.24.437-.613.43-.991a6.932 6.932 0 0 1 0-.255c.007-.38-.138-.751-.43-.992l-1.004-.827a1.125 1.125 0 0 1-.26-1.43l1.297-2.247a1.125 1.125 0 0 1 1.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.086.22-.128.332-.183.582-.495.644-.869l.214-1.28Z\"></path> <path stroke-linecap=\"round\" stroke-linejoin=\"round\" d=\"M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z\"></path></svg></button>")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 14, "</div></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -274,81 +300,81 @@ func VoteOptions(roomID string, voteSession dto.VoteResponse, currentUserID int)
 			}()
 		}
 		ctx = templ.InitializeContext(ctx)
-		templ_7745c5c3_Var8 := templ.GetChildren(ctx)
-		if templ_7745c5c3_Var8 == nil {
-			templ_7745c5c3_Var8 = templ.NopComponent
+		templ_7745c5c3_Var7 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var7 == nil {
+			templ_7745c5c3_Var7 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 14, "<div class=\"vote-section\"><div class=\"vote-title\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 15, "<div class=\"vote-section\"><div class=\"vote-title\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if voteSession.IsRevealed {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 15, "Voting Results")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 16, "Voting Results")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		} else {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 16, "Cast Your Vote")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 17, "Cast Your Vote")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 17, "</div><div class=\"vote-options\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 18, "</div><div class=\"vote-options\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		for _, value := range []string{"1", "2", "3", "5", "8", "13", "21", "34", "☕"} {
-			var templ_7745c5c3_Var9 = []any{"vote-btn" + getUserVoteClass(currentUserID, value, voteSession)}
-			templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var9...)
+			var templ_7745c5c3_Var8 = []any{"vote-btn" + getUserVoteClass(currentUserID, value, voteSession)}
+			templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var8...)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 18, "<button class=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 19, "<button class=\"")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var9 string
+			templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs(templ.CSSClasses(templ_7745c5c3_Var8).String())
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/pages/vote.templ`, Line: 1, Col: 0}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 20, "\" data-vote=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var10 string
-			templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinStringErrs(templ.CSSClasses(templ_7745c5c3_Var9).String())
+			templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinStringErrs(value)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/pages/vote.templ`, Line: 1, Col: 0}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/pages/vote.templ`, Line: 377, Col: 23}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var10))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 19, "\" data-vote=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 21, "\" onclick=\"castVote(this, this.dataset.vote)\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var11 string
 			templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.JoinStringErrs(value)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/pages/vote.templ`, Line: 301, Col: 23}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/pages/vote.templ`, Line: 379, Col: 12}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var11))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 20, "\" onclick=\"castVote(this, this.dataset.vote)\">")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			var templ_7745c5c3_Var12 string
-			templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.JoinStringErrs(value)
-			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/pages/vote.templ`, Line: 303, Col: 12}
-			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var12))
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 21, "</button>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 22, "</button>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 22, "</div></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 23, "</div></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -372,25 +398,25 @@ func MembersList(roomID string, members []dto.RoomMemberInfo, voteSession dto.Vo
 			}()
 		}
 		ctx = templ.InitializeContext(ctx)
-		templ_7745c5c3_Var13 := templ.GetChildren(ctx)
-		if templ_7745c5c3_Var13 == nil {
-			templ_7745c5c3_Var13 = templ.NopComponent
+		templ_7745c5c3_Var12 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var12 == nil {
+			templ_7745c5c3_Var12 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 23, "<div class=\"members-section\"><div class=\"members-title\">Room Members (")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 24, "<div class=\"members-section\"><div class=\"members-title\">Room Members (")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var14 string
-		templ_7745c5c3_Var14, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", len(members)))
+		var templ_7745c5c3_Var13 string
+		templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", len(members)))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/pages/vote.templ`, Line: 313, Col: 50}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/pages/vote.templ`, Line: 389, Col: 50}
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var14))
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var13))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 24, ")</div><div class=\"user-list\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 25, ")</div><div class=\"user-list\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -400,7 +426,7 @@ func MembersList(roomID string, members []dto.RoomMemberInfo, voteSession dto.Vo
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 25, "</div></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 26, "</div></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -424,90 +450,90 @@ func MemberItem(member dto.RoomMemberInfo, voteSession dto.VoteResponse) templ.C
 			}()
 		}
 		ctx = templ.InitializeContext(ctx)
-		templ_7745c5c3_Var15 := templ.GetChildren(ctx)
-		if templ_7745c5c3_Var15 == nil {
-			templ_7745c5c3_Var15 = templ.NopComponent
+		templ_7745c5c3_Var14 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var14 == nil {
+			templ_7745c5c3_Var14 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 26, "<div class=\"user-item\"><div class=\"user-info\"><div class=\"user-avatar\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 27, "<div class=\"user-item\"><div class=\"user-info\"><div class=\"user-avatar\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if member.Avatar != "" {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 27, "<img src=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 28, "<img src=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var16 string
-			templ_7745c5c3_Var16, templ_7745c5c3_Err = templ.JoinStringErrs(member.Avatar)
+			var templ_7745c5c3_Var15 string
+			templ_7745c5c3_Var15, templ_7745c5c3_Err = templ.JoinStringErrs(member.Avatar)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/pages/vote.templ`, Line: 328, Col: 29}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/pages/vote.templ`, Line: 404, Col: 29}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var15))
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 29, "\" alt=\"Avatar\"> ")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+		} else {
+			var templ_7745c5c3_Var16 string
+			templ_7745c5c3_Var16, templ_7745c5c3_Err = templ.JoinStringErrs(string(member.FirstName[0]))
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/pages/vote.templ`, Line: 406, Col: 34}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var16))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 28, "\" alt=\"Avatar\"> ")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-		} else {
-			var templ_7745c5c3_Var17 string
-			templ_7745c5c3_Var17, templ_7745c5c3_Err = templ.JoinStringErrs(string(member.FirstName[0]))
-			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/pages/vote.templ`, Line: 330, Col: 34}
-			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var17))
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 29, " ")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 30, " ")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
 		if member.IsOnline {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 30, "<div class=\"user-online\"></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 31, "<div class=\"user-online\"></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 31, "</div><div class=\"user-details\"><div class=\"user-name\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 32, "</div><div class=\"user-details\"><div class=\"user-name\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var18 string
-		templ_7745c5c3_Var18, templ_7745c5c3_Err = templ.JoinStringErrs(member.FirstName + " " + member.LastName)
+		var templ_7745c5c3_Var17 string
+		templ_7745c5c3_Var17, templ_7745c5c3_Err = templ.JoinStringErrs(member.FirstName + " " + member.LastName)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/pages/vote.templ`, Line: 337, Col: 69}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/pages/vote.templ`, Line: 413, Col: 69}
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var18))
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 32, "</div></div></div>")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var17))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var19 = []any{"vote-status-indicator " + userVoteStatusClass(member.UserID, voteSession)}
-		templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var19...)
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 33, "</div></div></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 33, "<div class=\"")
+		var templ_7745c5c3_Var18 = []any{"vote-status-indicator " + userVoteStatusClass(member.UserID, voteSession)}
+		templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var18...)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var20 string
-		templ_7745c5c3_Var20, templ_7745c5c3_Err = templ.JoinStringErrs(templ.CSSClasses(templ_7745c5c3_Var19).String())
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 34, "<div class=\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var19 string
+		templ_7745c5c3_Var19, templ_7745c5c3_Err = templ.JoinStringErrs(templ.CSSClasses(templ_7745c5c3_Var18).String())
 		if templ_7745c5c3_Err != nil {
 			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/pages/vote.templ`, Line: 1, Col: 0}
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var20))
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var19))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 34, "\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 35, "\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -515,7 +541,7 @@ func MemberItem(member dto.RoomMemberInfo, voteSession dto.VoteResponse) templ.C
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 35, "</div></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 36, "</div></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -539,61 +565,61 @@ func VoteResults(votes []models.Vote) templ.Component {
 			}()
 		}
 		ctx = templ.InitializeContext(ctx)
-		templ_7745c5c3_Var21 := templ.GetChildren(ctx)
-		if templ_7745c5c3_Var21 == nil {
-			templ_7745c5c3_Var21 = templ.NopComponent
+		templ_7745c5c3_Var20 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var20 == nil {
+			templ_7745c5c3_Var20 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 36, "<div class=\"results-section\"><div class=\"results-title\">Voting Results</div><div class=\"vote-summary\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 37, "<div class=\"results-section\"><div class=\"results-title\">Voting Results</div><div class=\"vote-summary\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var22 string
-		templ_7745c5c3_Var22, templ_7745c5c3_Err = templ.JoinStringErrs(voteSummary(votes))
+		var templ_7745c5c3_Var21 string
+		templ_7745c5c3_Var21, templ_7745c5c3_Err = templ.JoinStringErrs(voteSummary(votes))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/pages/vote.templ`, Line: 351, Col: 23}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/pages/vote.templ`, Line: 427, Col: 23}
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var22))
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var21))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 37, "</div><div class=\"vote-breakdown\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 38, "</div><div class=\"vote-breakdown\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		for value, count := range voteBreakdown(votes) {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 38, "<div class=\"vote-result\"><div class=\"vote-value\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 39, "<div class=\"vote-result\"><div class=\"vote-value\">")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var22 string
+			templ_7745c5c3_Var22, templ_7745c5c3_Err = templ.JoinStringErrs(value)
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/pages/vote.templ`, Line: 432, Col: 36}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var22))
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 40, "</div><div class=\"vote-count\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var23 string
-			templ_7745c5c3_Var23, templ_7745c5c3_Err = templ.JoinStringErrs(value)
+			templ_7745c5c3_Var23, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", count))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/pages/vote.templ`, Line: 356, Col: 36}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/pages/vote.templ`, Line: 433, Col: 55}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var23))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 39, "</div><div class=\"vote-count\">")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			var templ_7745c5c3_Var24 string
-			templ_7745c5c3_Var24, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", count))
-			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/pages/vote.templ`, Line: 357, Col: 55}
-			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var24))
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 40, " vote(s)</div></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 41, " vote(s)</div></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 41, "</div></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 42, "</div></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -617,55 +643,55 @@ func VoteControls(roomID string, isRevealed bool, canManageVotes bool) templ.Com
 			}()
 		}
 		ctx = templ.InitializeContext(ctx)
-		templ_7745c5c3_Var25 := templ.GetChildren(ctx)
-		if templ_7745c5c3_Var25 == nil {
-			templ_7745c5c3_Var25 = templ.NopComponent
+		templ_7745c5c3_Var24 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var24 == nil {
+			templ_7745c5c3_Var24 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 42, "<div class=\"vote-controls\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 43, "<div class=\"vote-controls\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if canManageVotes {
 			if !isRevealed {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 43, "<button class=\"btn btn-primary\" data-action=\"reveal\" data-room-id=\"")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 44, "<button class=\"btn btn-primary\" data-action=\"reveal\" data-room-id=\"")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				var templ_7745c5c3_Var25 string
+				templ_7745c5c3_Var25, templ_7745c5c3_Err = templ.JoinStringErrs(roomID)
+				if templ_7745c5c3_Err != nil {
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/pages/vote.templ`, Line: 444, Col: 78}
+				}
+				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var25))
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 45, "\"><svg class=\"btn-icon\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z\"></path> <circle cx=\"12\" cy=\"12\" r=\"3\"></circle></svg> Reveal Votes</button>")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+			} else {
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 46, "<button class=\"btn btn-destructive\" data-action=\"reset\" data-room-id=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var26 string
 				templ_7745c5c3_Var26, templ_7745c5c3_Err = templ.JoinStringErrs(roomID)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/pages/vote.templ`, Line: 368, Col: 78}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/pages/vote.templ`, Line: 452, Col: 81}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var26))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 44, "\"><svg class=\"btn-icon\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z\"></path> <circle cx=\"12\" cy=\"12\" r=\"3\"></circle></svg> Reveal Votes</button>")
-				if templ_7745c5c3_Err != nil {
-					return templ_7745c5c3_Err
-				}
-			} else {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 45, "<button class=\"btn btn-destructive\" data-action=\"reset\" data-room-id=\"")
-				if templ_7745c5c3_Err != nil {
-					return templ_7745c5c3_Err
-				}
-				var templ_7745c5c3_Var27 string
-				templ_7745c5c3_Var27, templ_7745c5c3_Err = templ.JoinStringErrs(roomID)
-				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/pages/vote.templ`, Line: 376, Col: 81}
-				}
-				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var27))
-				if templ_7745c5c3_Err != nil {
-					return templ_7745c5c3_Err
-				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 46, "\"><svg class=\"btn-icon\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z\"></path> <polyline points=\"9,22 9,12 15,12 15,22\"></polyline></svg> New Round</button>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 47, "\"><svg class=\"btn-icon\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z\"></path> <polyline points=\"9,22 9,12 15,12 15,22\"></polyline></svg> New Round</button>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 47, "</div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 48, "</div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -689,25 +715,25 @@ func VoteSuccess(message string) templ.Component {
 			}()
 		}
 		ctx = templ.InitializeContext(ctx)
-		templ_7745c5c3_Var28 := templ.GetChildren(ctx)
-		if templ_7745c5c3_Var28 == nil {
-			templ_7745c5c3_Var28 = templ.NopComponent
+		templ_7745c5c3_Var27 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var27 == nil {
+			templ_7745c5c3_Var27 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 48, "<div class=\"vote-status success\">✅ ")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 49, "<div class=\"vote-status success\">✅ ")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var29 string
-		templ_7745c5c3_Var29, templ_7745c5c3_Err = templ.JoinStringErrs(message)
+		var templ_7745c5c3_Var28 string
+		templ_7745c5c3_Var28, templ_7745c5c3_Err = templ.JoinStringErrs(message)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/pages/vote.templ`, Line: 389, Col: 47}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/pages/vote.templ`, Line: 465, Col: 47}
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var29))
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var28))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 49, "</div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 50, "</div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -731,25 +757,25 @@ func VoteError(message string) templ.Component {
 			}()
 		}
 		ctx = templ.InitializeContext(ctx)
-		templ_7745c5c3_Var30 := templ.GetChildren(ctx)
-		if templ_7745c5c3_Var30 == nil {
-			templ_7745c5c3_Var30 = templ.NopComponent
+		templ_7745c5c3_Var29 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var29 == nil {
+			templ_7745c5c3_Var29 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 50, "<div class=\"vote-status error\">❌ ")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 51, "<div class=\"vote-status error\">❌ ")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var31 string
-		templ_7745c5c3_Var31, templ_7745c5c3_Err = templ.JoinStringErrs(message)
+		var templ_7745c5c3_Var30 string
+		templ_7745c5c3_Var30, templ_7745c5c3_Err = templ.JoinStringErrs(message)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/pages/vote.templ`, Line: 393, Col: 45}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/pages/vote.templ`, Line: 469, Col: 45}
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var31))
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var30))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 51, "</div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 52, "</div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

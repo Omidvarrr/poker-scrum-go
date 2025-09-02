@@ -42,7 +42,7 @@ func Base(title string, content templ.Component) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, " - Planning</title><link rel=\"icon\" type=\"image/png\" sizes=\"32x32\" href=\"/static/images/logo.png\"><link rel=\"stylesheet\" href=\"/static/css/style.css\"><script src=\"https://unpkg.com/htmx.org@1.9.10\"></script><script src=\"https://unpkg.com/htmx.org/dist/ext/json-enc.js\"></script><script>\n\t\t\t\t// Redirect to login on 401 errors\n\t\t\t\tdocument.addEventListener('htmx:responseError', function(evt) {\n\t\t\t\t\tif (evt.detail.xhr.status === 401) {\n\t\t\t\t\t\twindow.location.href = '/login';\n\t\t\t\t\t}\n\t\t\t\t});\n\t\t\t</script></head><body>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, " - Planning</title><link rel=\"icon\" type=\"image/png\" sizes=\"32x32\" href=\"/static/images/logo.png\"><link rel=\"stylesheet\" href=\"/static/css/style.css\"><script src=\"https://unpkg.com/htmx.org@1.9.10\"></script><script src=\"https://unpkg.com/htmx.org/dist/ext/json-enc.js\"></script><script>\n\t\t\t\t// Redirect to login on 401 errors\n\t\t\t\tdocument.addEventListener('htmx:responseError', function(evt) {\n\t\t\t\t\tif (evt.detail.xhr.status === 401) {\n\t\t\t\t\t\twindow.location.href = '/login';\n\t\t\t\t\t}\n\t\t\t\t});\n\n\t\t\t\t// Toast notification function\n\t\t\t\tfunction showToast(message, type = 'success') {\n\t\t\t\t\tconst container = document.getElementById('toast-container');\n\t\t\t\t\tif (!container) return;\n\n\t\t\t\t\tconst toast = document.createElement('div');\n\t\t\t\t\ttoast.className = `toast toast-${type}`;\n\t\t\t\t\ttoast.innerHTML = `\n\t\t\t\t\t\t${message}\n\t\t\t\t\t\t<button class=\"toast-close\" onclick=\"this.parentElement.remove()\">×</button>\n\t\t\t\t\t`;\n\n\t\t\t\t\tcontainer.appendChild(toast);\n\n\t\t\t\t\t// Auto remove after 5 seconds\n\t\t\t\t\tsetTimeout(() => {\n\t\t\t\t\t\tif (toast.parentElement) {\n\t\t\t\t\t\t\ttoast.remove();\n\t\t\t\t\t\t}\n\t\t\t\t\t}, 5000);\n\t\t\t\t}\n\n\t\t\t\t// Dialog functions\n\t\t\t\tfunction showDialog(id) {\n\t\t\t\t\tdocument.getElementById('dialog-' + id).style.display = 'flex';\n\t\t\t\t}\n\n\t\t\t\tfunction hideDialog(id) {\n\t\t\t\t\tdocument.getElementById('dialog-' + id).style.display = 'none';\n\t\t\t\t}\n\n\t\t\t\tfunction confirmAction(id) {\n\t\t\t\t\t// This will be overridden by the calling component\n\t\t\t\t\tconsole.log('Confirm action for dialog:', id);\n\t\t\t\t}\n\t\t\t</script></head><body>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -103,7 +103,7 @@ func AppShell(path string, content templ.Component) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "</div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "<div id=\"toast-container\" class=\"toast-container\"></div></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -345,7 +345,7 @@ func Dialog(title string, content templ.Component) templ.Component {
 		var templ_7745c5c3_Var15 string
 		templ_7745c5c3_Var15, templ_7745c5c3_Err = templ.JoinStringErrs(title)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/base.templ`, Line: 105, Col: 36}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/base.templ`, Line: 142, Col: 36}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var15))
 		if templ_7745c5c3_Err != nil {

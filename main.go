@@ -110,6 +110,7 @@ func main() {
 	protected.Put("/rooms/:roomId", roomHandler.UpdateRoom)
 	protected.Delete("/rooms/:roomId", roomHandler.DeleteRoom)
 	protected.Get("/rooms/:roomId/members", roomHandler.GetRoomMembers)
+	protected.Get("/rooms/:roomId/settings", roomHandler.GetRoomSettings)
 
 	// Pages (templ)
 	app.Get("/", pageHandler.Home)
@@ -119,6 +120,7 @@ func main() {
 	app.Get("/create", pageHandler.Create)
 	app.Get("/profile", pageHandler.Profile)
 	app.Get("/rooms/:roomId", pageHandler.RoomVote)
+	app.Get("/rooms/:roomId/settings", pageHandler.RoomSettings)
 
 	app.Use(
 		"/ws", func(c *fiber.Ctx) error {

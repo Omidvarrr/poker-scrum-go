@@ -9,8 +9,6 @@ import "github.com/a-h/templ"
 import templruntime "github.com/a-h/templ/runtime"
 
 import "awesomeProject1/internal/dto"
-import "fmt"
-import "strings"
 
 func RoomSettingsDrawer(roomID string, room dto.RoomResponse) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
@@ -81,7 +79,7 @@ func RoomInfoSection(roomID string, room dto.RoomResponse) templ.Component {
 		var templ_7745c5c3_Var3 string
 		templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs("/api/rooms/" + roomID)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/components/room_settings.templ`, Line: 25, Col: 39}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/components/room_settings.templ`, Line: 23, Col: 39}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 		if templ_7745c5c3_Err != nil {
@@ -94,36 +92,13 @@ func RoomInfoSection(roomID string, room dto.RoomResponse) templ.Component {
 		var templ_7745c5c3_Var4 string
 		templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(room.Name)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/components/room_settings.templ`, Line: 33, Col: 70}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/components/room_settings.templ`, Line: 31, Col: 70}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "\" required> <label class=\"form-label\">Room Image (optional)</label><div class=\"file-input-wrapper\" id=\"settings-file-wrapper\"><input type=\"file\" name=\"room_image\" class=\"form-input file-input-modern\" accept=\"image/*\" onchange=\"updateSettingsFileInput(this)\"><div class=\"file-input-hint\"><svg class=\"file-upload-icon\" viewBox=\"0 0 24 24\" fill=\"currentColor\"><path d=\"M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z\"></path></svg> <span class=\"file-input-text\" id=\"settings-file-text\">Choose an image or drag and drop</span></div></div><script>\n\t\t\t\tfunction updateSettingsFileInput(input) {\n\t\t\t\t\tconst wrapper = document.getElementById('settings-file-wrapper');\n\t\t\t\t\tconst textElement = document.getElementById('settings-file-text');\n\t\t\t\t\t\n\t\t\t\t\tif (input.files && input.files[0]) {\n\t\t\t\t\t\tconst fileName = input.files[0].name;\n\t\t\t\t\t\ttextElement.textContent = fileName;\n\t\t\t\t\t\twrapper.classList.add('has-file');\n\t\t\t\t\t} else {\n\t\t\t\t\t\ttextElement.textContent = 'Choose an image or drag and drop';\n\t\t\t\t\t\twrapper.classList.remove('has-file');\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t</script>")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		if room.Avatar != "" {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "<div class=\"current-room-image\"><span class=\"form-label\">Current Image:</span><div class=\"current-room-preview\"><img src=\"")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			var templ_7745c5c3_Var5 string
-			templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs(room.Avatar)
-			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/components/room_settings.templ`, Line: 66, Col: 28}
-			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "\" alt=\"Current Room Image\" class=\"current-room-img\"></div></div>")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "<button type=\"submit\" class=\"primary-btn\">Update Room</button></form></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "\" required> <label class=\"form-label\">Room Image (optional)</label><div class=\"file-input-wrapper\" id=\"settings-file-wrapper\"><input type=\"file\" name=\"room_image\" class=\"form-input file-input-modern\" accept=\"image/*\" onchange=\"updateSettingsFileInput(this)\"><div class=\"file-input-hint\"><svg class=\"file-upload-icon\" viewBox=\"0 0 24 24\" fill=\"currentColor\"><path d=\"M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z\"></path></svg> <span class=\"file-input-text\" id=\"settings-file-text\">Choose an image or drag and drop</span></div></div><script>\n\t\t\t\tfunction updateSettingsFileInput(input) {\n\t\t\t\t\tconst wrapper = document.getElementById('settings-file-wrapper');\n\t\t\t\t\tconst textElement = document.getElementById('settings-file-text');\n\t\t\t\t\t\n\t\t\t\t\tif (input.files && input.files[0]) {\n\t\t\t\t\t\tconst fileName = input.files[0].name;\n\t\t\t\t\t\ttextElement.textContent = fileName;\n\t\t\t\t\t\twrapper.classList.add('has-file');\n\t\t\t\t\t} else {\n\t\t\t\t\t\ttextElement.textContent = 'Choose an image or drag and drop';\n\t\t\t\t\t\twrapper.classList.remove('has-file');\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t</script><button type=\"submit\" class=\"primary-btn\">Update Room</button></form></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -147,12 +122,20 @@ func DangerZone(roomID string) templ.Component {
 			}()
 		}
 		ctx = templ.InitializeContext(ctx)
-		templ_7745c5c3_Var6 := templ.GetChildren(ctx)
-		if templ_7745c5c3_Var6 == nil {
-			templ_7745c5c3_Var6 = templ.NopComponent
+		templ_7745c5c3_Var5 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var5 == nil {
+			templ_7745c5c3_Var5 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "<div class=\"settings-section danger-zone\"><h3 class=\"settings-section-title danger\">Danger Zone</h3><button class=\"danger-btn\" onclick=\"confirmDeleteRoom('{ roomID }')\">🗑️ Delete Room</button></div><script>\n\t\tfunction confirmDeleteRoom(roomId) {\n\t\t\tif (confirm('Are you sure you want to delete this room? This action cannot be undone.')) {\n\t\t\t\thtmx.ajax('DELETE', '/api/rooms/' + roomId, {target: 'body', swap: 'innerHTML'});\n\t\t\t}\n\t\t}\n\t\t\n\t</script>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "<div class=\"settings-section danger-zone\"><button class=\"danger-btn\" type=\"button\" onclick=\"showDialog('delete-room')\">Delete Room</button></div>")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = ConfirmDialog("delete-room", "Delete Room", "Are you sure you want to delete this room? This action cannot be undone.", "Delete", "Cancel").Render(ctx, templ_7745c5c3_Buffer)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "<script>\n\t\tfunction confirmAction(id) {\n\t\t\tif (id === 'delete-room') {\n\t\t\t\tfetch('/api/rooms/{ roomID }', {\n\t\t\t\t\tmethod: 'DELETE',\n\t\t\t\t\tcredentials: 'include'\n\t\t\t\t})\n\t\t\t\t.then(response => {\n\t\t\t\t\tif (response.ok) {\n\t\t\t\t\t\tshowToast('Room deleted successfully!', 'success');\n\t\t\t\t\t\tsetTimeout(() => {\n\t\t\t\t\t\t\twindow.location.href = '/rooms';\n\t\t\t\t\t\t}, 1500);\n\t\t\t\t\t} else {\n\t\t\t\t\t\treturn response.json().then(data => {\n\t\t\t\t\t\t\tthrow new Error(data.error || 'Failed to delete room');\n\t\t\t\t\t\t});\n\t\t\t\t\t}\n\t\t\t\t})\n\t\t\t\t.catch(error => {\n\t\t\t\t\tshowToast(error.message, 'error');\n\t\t\t\t})\n\t\t\t\t.finally(() => {\n\t\t\t\t\thideDialog('delete-room');\n\t\t\t\t});\n\t\t\t}\n\t\t}\n\t</script>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -176,12 +159,12 @@ func RoomUpdateSuccess() templ.Component {
 			}()
 		}
 		ctx = templ.InitializeContext(ctx)
-		templ_7745c5c3_Var7 := templ.GetChildren(ctx)
-		if templ_7745c5c3_Var7 == nil {
-			templ_7745c5c3_Var7 = templ.NopComponent
+		templ_7745c5c3_Var6 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var6 == nil {
+			templ_7745c5c3_Var6 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, "<div class=\"success-message-small\">✅ Room updated successfully</div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "<div class=\"success-message-small\">✅ Room updated successfully</div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -205,25 +188,67 @@ func RoomUpdateError(message string) templ.Component {
 			}()
 		}
 		ctx = templ.InitializeContext(ctx)
-		templ_7745c5c3_Var8 := templ.GetChildren(ctx)
-		if templ_7745c5c3_Var8 == nil {
-			templ_7745c5c3_Var8 = templ.NopComponent
+		templ_7745c5c3_Var7 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var7 == nil {
+			templ_7745c5c3_Var7 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 11, "<div class=\"error-message-small\">❌ ")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "<div class=\"error-message-small\">❌ ")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var9 string
-		templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs(message)
+		var templ_7745c5c3_Var8 string
+		templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs(message)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/components/room_settings.templ`, Line: 104, Col: 47}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/components/room_settings.templ`, Line: 114, Col: 47}
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, "</div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, "</div>")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		return nil
+	})
+}
+
+func DeleteConfirmationDialog(roomID string) templ.Component {
+	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
+		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
+		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
+			return templ_7745c5c3_CtxErr
+		}
+		templ_7745c5c3_Buffer, templ_7745c5c3_IsBuffer := templruntime.GetBuffer(templ_7745c5c3_W)
+		if !templ_7745c5c3_IsBuffer {
+			defer func() {
+				templ_7745c5c3_BufErr := templruntime.ReleaseBuffer(templ_7745c5c3_Buffer)
+				if templ_7745c5c3_Err == nil {
+					templ_7745c5c3_Err = templ_7745c5c3_BufErr
+				}
+			}()
+		}
+		ctx = templ.InitializeContext(ctx)
+		templ_7745c5c3_Var9 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var9 == nil {
+			templ_7745c5c3_Var9 = templ.NopComponent
+		}
+		ctx = templ.ClearChildren(ctx)
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 11, "<div class=\"dialog-overlay\" id=\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var10 string
+		templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinStringErrs("delete-dialog-" + roomID)
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/components/room_settings.templ`, Line: 118, Col: 59}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var10))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, "\" style=\"display: none;\" onclick=\"hideDeleteDialog('{ roomID }')\"><div class=\"dialog\" onclick=\"event.stopPropagation()\"><div class=\"dialog-title\">Delete Room</div><div class=\"dialog-content\"><p>Are you sure you want to delete this room? This action cannot be undone.</p></div><div class=\"dialog-actions\"><button class=\"dialog-btn secondary\" onclick=\"hideDeleteDialog('{ roomID }')\">Cancel</button> <button class=\"dialog-btn primary\" onclick=\"confirmDeleteRoom('{ roomID }')\">Delete</button></div></div></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

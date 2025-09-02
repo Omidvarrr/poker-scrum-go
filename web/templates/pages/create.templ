@@ -13,8 +13,8 @@ templ CreateRoomForm() {
 			  hx-encoding="multipart/form-data"
 			  hx-target="#create-result"
 			  hx-swap="innerHTML"
-			  hx-on::before-request="document.getElementById('create-btn').disabled = true; document.getElementById('create-btn').textContent = 'Creating...'"
-			  hx-on::after-request="document.getElementById('create-btn').disabled = false; document.getElementById('create-btn').textContent = 'Create Room'">
+			  hx-disabled-elt="#create-btn"
+			  onsubmit="return handleFormSubmit(event)">
 			
 			<div id="create-result"></div>
 			
@@ -67,6 +67,46 @@ templ CreateRoomForm() {
 				Create Room
 			</button>
 		</form>
+		
+		<script>
+			let isSubmitting = false;
+			
+			function handleFormSubmit(event) {
+				const btn = document.getElementById('create-btn');
+				
+				if (isSubmitting) {
+					event.preventDefault();
+					return false;
+				}
+				
+				isSubmitting = true;
+				btn.disabled = true;
+				btn.textContent = 'Creating...';
+				
+				// Reset after response
+				setTimeout(() => {
+					isSubmitting = false;
+				}, 10000); // Fallback timeout
+				
+				return true;
+			}
+			
+			// Reset on HTMX events (only on error)
+			document.addEventListener('htmx:afterRequest', function(evt) {
+				if (evt.target.closest('form')) {
+					// Only reset if the response was an error (not a success with redirect)
+					if (evt.detail.xhr.status >= 400) {
+						isSubmitting = false;
+						const btn = document.getElementById('create-btn');
+						if (btn) {
+							btn.disabled = false;
+							btn.textContent = 'Create Room';
+						}
+					}
+					// On success, the server response will handle button state
+				}
+			});
+		</script>
 	</div>
 }
 

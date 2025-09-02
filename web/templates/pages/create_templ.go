@@ -66,7 +66,7 @@ func CreateRoomForm() templ.Component {
 			templ_7745c5c3_Var2 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "<div class=\"create-form\"><form hx-post=\"/api/rooms\" hx-encoding=\"multipart/form-data\" hx-target=\"#create-result\" hx-swap=\"innerHTML\" hx-on::before-request=\"document.getElementById('create-btn').disabled = true; document.getElementById('create-btn').textContent = 'Creating...'\" hx-on::after-request=\"document.getElementById('create-btn').disabled = false; document.getElementById('create-btn').textContent = 'Create Room'\"><div id=\"create-result\"></div><label for=\"room-name\" class=\"form-label\">Room Name</label> <input type=\"text\" name=\"name\" id=\"room-name\" class=\"form-input\" placeholder=\"Sprint Planning Session\" required maxlength=\"50\"> <label for=\"room-image\" class=\"form-label\">Room Image (optional)</label><div class=\"file-input-wrapper\" id=\"file-wrapper\"><input type=\"file\" name=\"room_image\" id=\"room-image\" class=\"form-input file-input-modern\" accept=\"image/*\" onchange=\"updateFileInput(this)\"><div class=\"file-input-hint\"><svg class=\"file-upload-icon\" viewBox=\"0 0 24 24\" fill=\"currentColor\"><path d=\"M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z\"></path></svg> <span class=\"file-input-text\" id=\"file-text\">Choose an image or drag and drop</span></div></div><script>\n\t\t\t\tfunction updateFileInput(input) {\n\t\t\t\t\tconst wrapper = document.getElementById('file-wrapper');\n\t\t\t\t\tconst textElement = document.getElementById('file-text');\n\t\t\t\t\t\n\t\t\t\t\tif (input.files && input.files[0]) {\n\t\t\t\t\t\tconst fileName = input.files[0].name;\n\t\t\t\t\t\ttextElement.textContent = fileName;\n\t\t\t\t\t\twrapper.classList.add('has-file');\n\t\t\t\t\t} else {\n\t\t\t\t\t\ttextElement.textContent = 'Choose an image or drag and drop';\n\t\t\t\t\t\twrapper.classList.remove('has-file');\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t</script><button type=\"submit\" class=\"primary-btn\" id=\"create-btn\">Create Room</button></form></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "<div class=\"create-form\"><form hx-post=\"/api/rooms\" hx-encoding=\"multipart/form-data\" hx-target=\"#create-result\" hx-swap=\"innerHTML\" hx-disabled-elt=\"#create-btn\" onsubmit=\"return handleFormSubmit(event)\"><div id=\"create-result\"></div><label for=\"room-name\" class=\"form-label\">Room Name</label> <input type=\"text\" name=\"name\" id=\"room-name\" class=\"form-input\" placeholder=\"Sprint Planning Session\" required maxlength=\"50\"> <label for=\"room-image\" class=\"form-label\">Room Image (optional)</label><div class=\"file-input-wrapper\" id=\"file-wrapper\"><input type=\"file\" name=\"room_image\" id=\"room-image\" class=\"form-input file-input-modern\" accept=\"image/*\" onchange=\"updateFileInput(this)\"><div class=\"file-input-hint\"><svg class=\"file-upload-icon\" viewBox=\"0 0 24 24\" fill=\"currentColor\"><path d=\"M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z\"></path></svg> <span class=\"file-input-text\" id=\"file-text\">Choose an image or drag and drop</span></div></div><script>\n\t\t\t\tfunction updateFileInput(input) {\n\t\t\t\t\tconst wrapper = document.getElementById('file-wrapper');\n\t\t\t\t\tconst textElement = document.getElementById('file-text');\n\t\t\t\t\t\n\t\t\t\t\tif (input.files && input.files[0]) {\n\t\t\t\t\t\tconst fileName = input.files[0].name;\n\t\t\t\t\t\ttextElement.textContent = fileName;\n\t\t\t\t\t\twrapper.classList.add('has-file');\n\t\t\t\t\t} else {\n\t\t\t\t\t\ttextElement.textContent = 'Choose an image or drag and drop';\n\t\t\t\t\t\twrapper.classList.remove('has-file');\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t</script><button type=\"submit\" class=\"primary-btn\" id=\"create-btn\">Create Room</button></form><script>\n\t\t\tlet isSubmitting = false;\n\t\t\t\n\t\t\tfunction handleFormSubmit(event) {\n\t\t\t\tconst btn = document.getElementById('create-btn');\n\t\t\t\t\n\t\t\t\tif (isSubmitting) {\n\t\t\t\t\tevent.preventDefault();\n\t\t\t\t\treturn false;\n\t\t\t\t}\n\t\t\t\t\n\t\t\t\tisSubmitting = true;\n\t\t\t\tbtn.disabled = true;\n\t\t\t\tbtn.textContent = 'Creating...';\n\t\t\t\t\n\t\t\t\t// Reset after response\n\t\t\t\tsetTimeout(() => {\n\t\t\t\t\tisSubmitting = false;\n\t\t\t\t}, 10000); // Fallback timeout\n\t\t\t\t\n\t\t\t\treturn true;\n\t\t\t}\n\t\t\t\n\t\t\t// Reset on HTMX events (only on error)\n\t\t\tdocument.addEventListener('htmx:afterRequest', function(evt) {\n\t\t\t\tif (evt.target.closest('form')) {\n\t\t\t\t\t// Only reset if the response was an error (not a success with redirect)\n\t\t\t\t\tif (evt.detail.xhr.status >= 400) {\n\t\t\t\t\t\tisSubmitting = false;\n\t\t\t\t\t\tconst btn = document.getElementById('create-btn');\n\t\t\t\t\t\tif (btn) {\n\t\t\t\t\t\t\tbtn.disabled = false;\n\t\t\t\t\t\t\tbtn.textContent = 'Create Room';\n\t\t\t\t\t\t}\n\t\t\t\t\t}\n\t\t\t\t\t// On success, the server response will handle button state\n\t\t\t\t}\n\t\t\t});\n\t\t</script></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -102,7 +102,7 @@ func CreateRoomSuccess(roomID string, roomName string) templ.Component {
 		var templ_7745c5c3_Var4 string
 		templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(roomName)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/pages/create.templ`, Line: 77, Col: 42}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/pages/create.templ`, Line: 117, Col: 42}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
 		if templ_7745c5c3_Err != nil {
@@ -115,7 +115,7 @@ func CreateRoomSuccess(roomID string, roomName string) templ.Component {
 		var templ_7745c5c3_Var5 string
 		templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs("/rooms/" + roomID)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/pages/create.templ`, Line: 81, Col: 32}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/pages/create.templ`, Line: 121, Col: 32}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
 		if templ_7745c5c3_Err != nil {
@@ -157,7 +157,7 @@ func CreateRoomError(message string) templ.Component {
 		var templ_7745c5c3_Var7 string
 		templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs(message)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/pages/create.templ`, Line: 97, Col: 29}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/pages/create.templ`, Line: 137, Col: 29}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
 		if templ_7745c5c3_Err != nil {

@@ -9,6 +9,7 @@ import "github.com/a-h/templ"
 import templruntime "github.com/a-h/templ/runtime"
 
 import "awesomeProject1/internal/dto"
+import "awesomeProject1/web/templates/components"
 
 func getApiEndpoint(showOnlyMember bool) string {
 	if showOnlyMember {
@@ -94,7 +95,7 @@ func WelcomeSection(greeting dto.GreetingResponse) templ.Component {
 		var templ_7745c5c3_Var3 string
 		templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(greeting.Message)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/pages/home.templ`, Line: 23, Col: 50}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/pages/home.templ`, Line: 24, Col: 50}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 		if templ_7745c5c3_Err != nil {
@@ -107,7 +108,7 @@ func WelcomeSection(greeting dto.GreetingResponse) templ.Component {
 		var templ_7745c5c3_Var4 string
 		templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(greeting.Quote)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/pages/home.templ`, Line: 25, Col: 47}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/pages/home.templ`, Line: 26, Col: 47}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
 		if templ_7745c5c3_Err != nil {
@@ -149,7 +150,7 @@ func RoomList(rooms []dto.RoomResponse, showOnlyMember bool) templ.Component {
 		var templ_7745c5c3_Var6 string
 		templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs(getApiEndpoint(showOnlyMember))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/pages/home.templ`, Line: 31, Col: 42}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/pages/home.templ`, Line: 32, Col: 42}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
 		if templ_7745c5c3_Err != nil {
@@ -181,109 +182,13 @@ func RoomList(rooms []dto.RoomResponse, showOnlyMember bool) templ.Component {
 			}
 		} else {
 			for _, room := range rooms {
-				templ_7745c5c3_Err = RoomCard(room).Render(ctx, templ_7745c5c3_Buffer)
+				templ_7745c5c3_Err = components.RoomCard(room).Render(ctx, templ_7745c5c3_Buffer)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
 		}
 		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 13, "</div>")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		return nil
-	})
-}
-
-func RoomCard(room dto.RoomResponse) templ.Component {
-	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
-		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
-		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
-			return templ_7745c5c3_CtxErr
-		}
-		templ_7745c5c3_Buffer, templ_7745c5c3_IsBuffer := templruntime.GetBuffer(templ_7745c5c3_W)
-		if !templ_7745c5c3_IsBuffer {
-			defer func() {
-				templ_7745c5c3_BufErr := templruntime.ReleaseBuffer(templ_7745c5c3_Buffer)
-				if templ_7745c5c3_Err == nil {
-					templ_7745c5c3_Err = templ_7745c5c3_BufErr
-				}
-			}()
-		}
-		ctx = templ.InitializeContext(ctx)
-		templ_7745c5c3_Var7 := templ.GetChildren(ctx)
-		if templ_7745c5c3_Var7 == nil {
-			templ_7745c5c3_Var7 = templ.NopComponent
-		}
-		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 14, "<div class=\"room-card\" data-room-id=\"")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		var templ_7745c5c3_Var8 string
-		templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs(room.ID)
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/pages/home.templ`, Line: 51, Col: 25}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 15, "\" style=\"cursor: pointer;\" onclick=\"navigateToRoom(this)\"><div class=\"room-emoji\">")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		if room.Avatar != "" {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 16, "<img src=\"")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			var templ_7745c5c3_Var9 string
-			templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs(room.Avatar)
-			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/pages/home.templ`, Line: 57, Col: 26}
-			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 17, "\" alt=\"")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			var templ_7745c5c3_Var10 string
-			templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinStringErrs(room.Name)
-			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/pages/home.templ`, Line: 57, Col: 44}
-			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var10))
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 18, "\" class=\"room-avatar-img\">")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-		} else {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 19, "<span>🎯</span>")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 20, "</div><div class=\"room-name\">")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		var templ_7745c5c3_Var11 string
-		templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.JoinStringErrs(room.Name)
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/pages/home.templ`, Line: 63, Col: 36}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var11))
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 21, "</div></div><script>\n\t\tfunction navigateToRoom(element) {\n\t\t\tconst roomId = element.dataset.roomId;\n\t\t\twindow.location.href = '/rooms/' + roomId;\n\t\t}\n\t</script>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -307,25 +212,25 @@ func RoomJoinDialog(roomID string, roomName string) templ.Component {
 			}()
 		}
 		ctx = templ.InitializeContext(ctx)
-		templ_7745c5c3_Var12 := templ.GetChildren(ctx)
-		if templ_7745c5c3_Var12 == nil {
-			templ_7745c5c3_Var12 = templ.NopComponent
+		templ_7745c5c3_Var7 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var7 == nil {
+			templ_7745c5c3_Var7 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 22, "<div class=\"dialog-overlay\" onclick=\"this.remove()\"><div class=\"dialog\" onclick=\"event.stopPropagation()\"><div class=\"dialog-title\">Join Room</div><div class=\"dialog-content\"><p>Do you want to join \"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 14, "<div class=\"dialog-overlay\" onclick=\"this.remove()\"><div class=\"dialog\" onclick=\"event.stopPropagation()\"><div class=\"dialog-title\">Join Room</div><div class=\"dialog-content\"><p>Do you want to join \"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var13 string
-		templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinStringErrs(roomName)
+		var templ_7745c5c3_Var8 string
+		templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs(roomName)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/pages/home.templ`, Line: 79, Col: 38}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/pages/home.templ`, Line: 56, Col: 38}
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var13))
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 23, "\"?</p></div><div class=\"dialog-actions\"><button class=\"dialog-btn secondary\" onclick=\"this.closest('.dialog-overlay').remove()\">Cancel</button> <button class=\"dialog-btn primary\" onclick=\"window.location.href = '/rooms/' + '{ roomID }'\">Join Room</button></div></div></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 15, "\"?</p></div><div class=\"dialog-actions\"><button class=\"dialog-btn secondary\" onclick=\"this.closest('.dialog-overlay').remove()\">Cancel</button> <button class=\"dialog-btn primary\" onclick=\"window.location.href = '/rooms/' + '{ roomID }'\">Join Room</button></div></div></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -349,12 +254,12 @@ func HomeWebSocket() templ.Component {
 			}()
 		}
 		ctx = templ.InitializeContext(ctx)
-		templ_7745c5c3_Var14 := templ.GetChildren(ctx)
-		if templ_7745c5c3_Var14 == nil {
-			templ_7745c5c3_Var14 = templ.NopComponent
+		templ_7745c5c3_Var9 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var9 == nil {
+			templ_7745c5c3_Var9 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 24, "<script type=\"text/javascript\">\n\t\tlet homeWs = null;\n\n\t\tfunction initHomeWebSocket() {\n\t\t\tconst protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';\n\t\t\tconst wsUrl = `${protocol}//${window.location.host}/ws`;\n\n\t\t\thomeWs = new WebSocket(wsUrl);\n\n\t\t\thomeWs.onopen = function() {\n\t\t\t\tconsole.log('Home WebSocket connected');\n\t\t\t\t// Join global room updates channel\n\t\t\t\thomeWs.send(JSON.stringify({\n\t\t\t\t\ttype: 'join_global_updates'\n\t\t\t\t}));\n\t\t\t};\n\n\t\t\thomeWs.onmessage = function(event) {\n\t\t\t\tconst message = JSON.parse(event.data);\n\t\t\t\thandleHomeWebSocketMessage(message);\n\t\t\t};\n\n\t\t\thomeWs.onclose = function() {\n\t\t\t\tconsole.log('Home WebSocket disconnected, reconnecting...');\n\t\t\t\t// Reconnect after 3 seconds\n\t\t\t\tsetTimeout(() => initHomeWebSocket(), 3000);\n\t\t\t};\n\n\t\t\thomeWs.onerror = function(error) {\n\t\t\t\tconsole.log('Home WebSocket error:', error);\n\t\t\t};\n\t\t}\n\n\t\tfunction handleHomeWebSocketMessage(message) {\n\t\t\tconsole.log('Home WebSocket message received:', message);\n\t\t\tswitch (message.type) {\n\t\t\t\tcase 'room_member_update':\n\t\t\t\tcase 'user_joined_room':\n\t\t\t\tcase 'user_left_room':\n\t\t\t\t\t// Refresh the rooms list to show updated online status\n\t\t\t\t\tsetTimeout(() => {\n\t\t\t\t\t\thtmx.ajax('GET', '/api/rooms/live', {\n\t\t\t\t\t\t\ttarget: '.room-list',\n\t\t\t\t\t\t\tswap: 'innerHTML'\n\t\t\t\t\t\t});\n\t\t\t\t\t}, 100);\n\t\t\t\t\tbreak;\n\t\t\t\tcase 'online_users_update':\n\t\t\t\t\t// Could update online indicators on room cards\n\t\t\t\t\tbreak;\n\t\t\t}\n\t\t}\n\n\t\t// Initialize WebSocket when page loads\n\t\tif (document.readyState === 'loading') {\n\t\t\tdocument.addEventListener('DOMContentLoaded', initHomeWebSocket);\n\t\t} else {\n\t\t\tinitHomeWebSocket();\n\t\t}\n\t</script>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 16, "<script type=\"text/javascript\">\n\t\tlet homeWs = null;\n\n\t\tfunction initHomeWebSocket() {\n\t\t\tconst protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';\n\t\t\tconst wsUrl = `${protocol}//${window.location.host}/ws`;\n\n\t\t\thomeWs = new WebSocket(wsUrl);\n\n\t\t\thomeWs.onopen = function() {\n\t\t\t\tconsole.log('Home WebSocket connected');\n\t\t\t\t// Join global room updates channel\n\t\t\t\thomeWs.send(JSON.stringify({\n\t\t\t\t\ttype: 'join_global_updates'\n\t\t\t\t}));\n\t\t\t};\n\n\t\t\thomeWs.onmessage = function(event) {\n\t\t\t\tconst message = JSON.parse(event.data);\n\t\t\t\thandleHomeWebSocketMessage(message);\n\t\t\t};\n\n\t\t\thomeWs.onclose = function() {\n\t\t\t\tconsole.log('Home WebSocket disconnected, reconnecting...');\n\t\t\t\t// Reconnect after 3 seconds\n\t\t\t\tsetTimeout(() => initHomeWebSocket(), 3000);\n\t\t\t};\n\n\t\t\thomeWs.onerror = function(error) {\n\t\t\t\tconsole.log('Home WebSocket error:', error);\n\t\t\t};\n\t\t}\n\n\t\tfunction handleHomeWebSocketMessage(message) {\n\t\t\tconsole.log('Home WebSocket message received:', message);\n\t\t\tswitch (message.type) {\n\t\t\t\tcase 'user_joined_room':\n\t\t\t\tcase 'user_left_room':\n\t\t\t\t\t// Refresh the rooms list to show updated online status\n\t\t\t\t\t// Use a slightly longer delay for user_left_room to ensure ActiveConnections are updated\n\t\t\t\t\tconst delay = message.type === 'user_left_room' ? 200 : 100;\n\t\t\t\t\tsetTimeout(() => {\n\t\t\t\t\t\thtmx.ajax('GET', '/api/rooms/live', {\n\t\t\t\t\t\t\ttarget: '.room-list',\n\t\t\t\t\t\t\tswap: 'innerHTML'\n\t\t\t\t\t\t});\n\t\t\t\t\t}, delay);\n\t\t\t\t\tbreak;\n\t\t\t\tcase 'online_users_update':\n\t\t\t\t\tbreak;\n\t\t\t}\n\t\t}\n\n\t\t// Initialize WebSocket when page loads\n\t\tif (document.readyState === 'loading') {\n\t\t\tdocument.addEventListener('DOMContentLoaded', initHomeWebSocket);\n\t\t} else {\n\t\t\tinitHomeWebSocket();\n\t\t}\n\t</script>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

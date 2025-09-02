@@ -141,6 +141,27 @@ func (h *PageHandler) Profile(c *fiber.Ctx) error {
 	return h.render(c, "Profile", pages.ProfilePage(profile))
 }
 
+func (h *PageHandler) RoomSettings(c *fiber.Ctx) error {
+	roomID := c.Params("roomId")
+	userID, err := getUserIDIfAny(c)
+
+	if err != nil || userID == 0 {
+		return c.Redirect("/login", fiber.StatusFound)
+	}
+
+	baseURL := c.Protocol() + "://" + c.Get("Host")
+	room, err := h.roomService.GetRoomByID(roomID, userID, baseURL)
+	if err != nil {
+		return c.Status(fiber.StatusForbidden).SendString("Access denied")
+	}
+
+	if !room.IsOwner {
+		return c.Status(fiber.StatusForbidden).SendString("Only owners can access settings")
+	}
+
+	return h.render(c, "Room Settings", pages.RoomSettingsPage(room))
+}
+
 func getUserIDIfAny(c *fiber.Ctx) (int, error) {
 	if id, err := utils.GetUserIDFromToken(c); err == nil {
 		return id, nil
