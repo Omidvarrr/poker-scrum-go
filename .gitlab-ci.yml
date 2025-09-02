@@ -21,10 +21,7 @@ build-docker-image:
     - echo "Building Docker image with tag $IMAGE_TAG"
     - docker build -t $IMAGE_NAME:$IMAGE_TAG .
     - docker push $IMAGE_NAME:$IMAGE_TAG
-    - echo "IMAGE_TAG=$IMAGE_TAG" > image_info.env
-  artifacts:
-    reports:
-      dotenv: image_info.env
+    - echo "Image built and pushed with tag $IMAGE_TAG"
   rules:
     - if: '$CI_COMMIT_BRANCH == "develop" || $CI_COMMIT_BRANCH == "main"'
 
@@ -33,6 +30,7 @@ deploy-dev:
   image: hamravesh.hamdocker.ir/public/darkube-cli:v1.1
   stage: deploy
   script:
+    - export IMAGE_TAG=${CI_COMMIT_SHORT_SHA:-latest}
     - echo "Deploying with image tag $IMAGE_TAG"
     - darkube deploy --token $DARKUBE_DEV_TOKEN --app-id $DARKUBE_DEV_APP_ID --image-tag "$IMAGE_TAG"
   rules:
@@ -40,4 +38,3 @@ deploy-dev:
       when: always
   needs:
     - job: build-docker-image
-      artifacts: true
